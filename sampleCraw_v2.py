@@ -19,43 +19,49 @@ def restart_program():
 
 
 cookie_support= urllib2.HTTPCookieProcessor(cookielib.CookieJar())
-#proxy_support = urllib2.ProxyHandler({'http':'http://127.0.0:8087'})
 opener = urllib2.build_opener(cookie_support, urllib2.HTTPHandler)
 urllib2.install_opener(opener)
 
 
-fp=open("./id_test.txt", "r")
-cout = 0
+count = 0
+htmls_dir = 'htmls-5057131-5080414';
+if not os.path.isdir(htmls_dir):
+    os.mkdir(htmls_dir)
 
-for eachline in fp:
-    eid = eachline.strip('\n')
-    url = 'http://movie.douban.com/subject/'+eid
-    print url
+id_file = 'movieId-5057131--5080414'
+
+lines = open(id_file, "r").readlines()
+
+pro_start_time = time.time()
+start_time = time.time()
+end_time = time.time()
+for line in lines:
+    eid = line.strip()
+    url = 'http://movie.douban.com/subject/%s' % eid
+    if count % 10 == 0:
+        end_time = time.time()
+        print 'crawl %s id %s, this round cost %.2fs, total cost %.2fmin' % (count, eid, end_time - start_time, (time.time() - pro_start_time) / 60.0)
+        start_time = time.time()
     try:
         data = urllib2.urlopen(url).read()
     except Exception, e:
         data = 'no data'
-        print e.code
+        print 'error occured %s' % e.code
         if e.code == 403:
             break
-    path = ''.join(['e:\\detailHtml_2W\\',eid,'.html'])
-    writeTo(path,data,'w')
+    path = '%s/%s.html' % (htmls_dir, eid)
+    writeTo(path, data, 'w+')
     time.sleep(3)
-    cout+=1
-    print cout
-    #if cout%100==0:
-        #print cout
-    if cout%5 ==0:
+    count+=1
+    if count % 100 == 0:
+        print count
         time.sleep(3)
-        print 'restart'
-        fp.close
-        fp=open("./id_test.txt", "r")
-        a = fp.read()
-        fp.close
-        b = a[40:]
-        fp=open("./id_test.txt", "w")
-        fp.write(b)
-        fp.close
+        print 'crawled %s ids, restart, programs have running %s min' % (count, time.time() - pro_start_time)
+        lines = open(id_file, "r").readlines()
+        lines = lines[count:]
+        f = open(id_file, "w+")
+        [f.write('%s\n' % l) for l in lines]
+        f.close()
         print 'rewrite txt,delete 40bit'
         restart_program()
 

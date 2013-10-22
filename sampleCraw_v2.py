@@ -55,7 +55,7 @@ for line in lines:
     count+=1
     if count % 100 == 0:
         time.sleep(3)
-        print 'crawled %s ids, restart, programs have running %s min' % (count, time.time() - pro_start_time)
+        print 'crawled %s ids, restart, programs have running %.2f min' % (count, (time.time() - pro_start_time) / 60.0)
         lines = open(id_file, "r").readlines()
         lines = lines[count:]
         f = open(id_file, "w+")

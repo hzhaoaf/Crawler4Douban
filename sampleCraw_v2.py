@@ -46,7 +46,7 @@ for line in lines:
         data = urllib2.urlopen(url).read()
     except Exception, e:
         data = 'no data'
-        print 'error occured %s' % e.code
+        print 'error occured %s id %s' % (e.code, eid)
         if e.code == 403:
             break
     path = '%s/%s.html' % (htmls_dir, eid)
@@ -54,15 +54,14 @@ for line in lines:
     time.sleep(3)
     count+=1
     if count % 100 == 0:
-        print count
         time.sleep(3)
         print 'crawled %s ids, restart, programs have running %s min' % (count, time.time() - pro_start_time)
         lines = open(id_file, "r").readlines()
         lines = lines[count:]
         f = open(id_file, "w+")
-        [f.write('%s\n' % l) for l in lines]
+        [f.write('%s' % l) for l in lines]
         f.close()
-        print 'rewrite txt,delete 40bit'
+        print 'rewrite txt,delete 100'
         restart_program()
 
 

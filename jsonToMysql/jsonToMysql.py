@@ -88,6 +88,8 @@ jsonKeys = jsonTarget.keys()
 print "JSON keys:"
 #print jsonTarget.keys()
 
+insertDict = {}
+
 for jsonKey in jsonKeys:
     #print jsonKey
     fieldValue = jsonTarget[jsonKey]
@@ -95,8 +97,12 @@ for jsonKey in jsonKeys:
         subKeys = fieldValue.keys()
         for subKey in subKeys:
             print subKey
+            insertDict[subKey] = fieldValue[subKey]
     else:
         print jsonKey
+        insertDict[jsonKey] = fieldValue
+
+
     '''
     if jsonKey == "genres":
         print fieldValue[0] + fieldValue[1] + fieldValue[2]
@@ -118,7 +124,93 @@ for jsonKey in jsonKeys:
     '''
 jsonFile.close()
 
+# Test if our dict works
+print "Fields will be inserted are:"
+insertKeys = insertDict.keys()
+for insertKey in insertKeys:
+    print insertKey + ":"
+    print insertDict[insertKey]
+
+def getJsonFileListFromDirectory(jsonDirectory):
+    pass
+
 def insertMysqlRecordFromJson(jsonFileName):
+    try:
+        # Get raw JSON
+        jsonString = getJsonStringFromJsonFile(jsonFileName)
+
+        # Get seperate fields of JSON
+        insertDict = getSeperateFieldFromJson(jsonTarget)
+
+        # Insert record to Mysql
+        insertString = "INSERT INTO movie_items(rating_max, \
+                                                rating_average, \
+                                                rating_stars, \
+                                                rating_min, \
+                                                reviews_count, \
+                                                wish_count, \
+                                                douban_site, \
+                                                year, \
+                                                image_small, \
+                                                image_large, \
+                                                image_medium, \
+                                                subject_url, \
+                                                subject_id, \
+                                                mobile_url, \
+                                                title, \
+                                                do_count, \
+                                                seasons_count, \
+                                                schedule_url, \
+                                                episodes_count, \
+                                                genres, \
+                                                current_season, \
+                                                collect_count, \
+                                                casts, \
+                                                countries, \
+                                                original_title, \
+                                                summary, \
+                                                summary_segmentation, \
+                                                subtype, \
+                                                directors, \
+                                                comments_count, \
+                                                ratings_count, \
+                                                aka) \
+                                            values(insertDict["rating_max"], \
+                                                   insertDict["rating_average"], \
+                                                   insertDict["rating_stars"], \
+                                                   insertDict["rating_min"], \
+                                                   insertDict["reviews_count"], \
+                                                   insertDict["wish_count"], \
+                                                   insertDict["douban_site"], \
+                                                   insertDict["year"], \
+                                                   insertDict["image_small"], \
+                                                   insertDict["image_large"], \
+                                                   insertDict["image_medium"], \
+                                                   insertDict["subject_url"], \
+                                                   insertDict["subject_id"], \
+                                                   insertDict["mobile_url"], \
+                                                   insertDict["title"], \
+                                                   insertDict["do_count"], \
+                                                   insertDict["seasons_count"], \
+                                                   insertDict["schedule_url"], \
+                                                   insertDict["episodes_count"], \
+                                                   insertDict["genres"], \
+                                                   insertDict["current_season"], \
+                                                   insertDict["collect_count"], \
+                                                   insertDict["casts"], \
+                                                   insertDict["countries"], \
+                                                   insertDict["original_title"], \
+                                                   insertDict["summary"], \
+                                                   insertDict["summary_segmentation"], \
+                                                   insertDict["subtype"], \
+                                                   insertDict["directors"], \
+                                                   insertDict["comments_count"], \
+                                                   insertDict["ratings_count"],
+                                                   insertDict["aka"]); \
+                                                   "
+
+
+
     pass
 
 def getSeperateFieldFromJson(jsonString):
@@ -132,3 +224,15 @@ def getJsonStringFromJsonFile(jsonFileName):
         return jsonString
     except IOError:
         print "IOError occured!"
+
+def getJsonStringFromJsonFileUsingDecoder(jsonFileName):
+    try:
+        jsonFile = file(jsonFileName)
+        jsonSource = jsonFile.read()
+        jsonTarget = json.JSONDecoder().decode(jsonSource)
+        jsonFile.close()
+        return jsonTarget
+    except IOError:
+        print "IOError occured!"
+
+

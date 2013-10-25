@@ -8,6 +8,7 @@ A script to import JSON data to Mysql record of Douban Movie items
 import json
 import MySQLdb as mdb
 import sys
+import glob
 
 # Test MySQLdb module
 print "Test mysql..."
@@ -23,6 +24,10 @@ except mdb.Error, e:
 finally:
     if con:
         con.close()
+
+# Test glob module
+testJsonFileList = glob.glob('./jsonData/*.json')
+print testJsonFileList
 
 # Create Database and Tables
 create_movie_items_table = "CREATE TABLE IF NOT EXISTS \
@@ -132,7 +137,8 @@ for insertKey in insertKeys:
     print insertDict[insertKey]
 
 def getJsonFileListFromDirectory(jsonDirectory):
-    pass
+    jsonFileList = glob.glob(jsonDirectory+'/*.json')
+    return jsonFileList
 
 def insertMysqlRecordFromJson(jsonFileName):
     try:
@@ -143,75 +149,75 @@ def insertMysqlRecordFromJson(jsonFileName):
         insertDict = getSeperateFieldFromJson(jsonTarget)
 
         # Insert record to Mysql
-        insertString = "INSERT INTO movie_items(rating_max, \
-                                                rating_average, \
-                                                rating_stars, \
-                                                rating_min, \
-                                                reviews_count, \
-                                                wish_count, \
-                                                douban_site, \
-                                                year, \
-                                                image_small, \
-                                                image_large, \
-                                                image_medium, \
-                                                subject_url, \
-                                                subject_id, \
-                                                mobile_url, \
-                                                title, \
-                                                do_count, \
-                                                seasons_count, \
-                                                schedule_url, \
-                                                episodes_count, \
-                                                genres, \
-                                                current_season, \
-                                                collect_count, \
-                                                casts, \
-                                                countries, \
-                                                original_title, \
-                                                summary, \
-                                                summary_segmentation, \
-                                                subtype, \
-                                                directors, \
-                                                comments_count, \
-                                                ratings_count, \
-                                                aka) \
-                                            values(insertDict["rating_max"], \
-                                                   insertDict["rating_average"], \
-                                                   insertDict["rating_stars"], \
-                                                   insertDict["rating_min"], \
-                                                   insertDict["reviews_count"], \
-                                                   insertDict["wish_count"], \
-                                                   insertDict["douban_site"], \
-                                                   insertDict["year"], \
-                                                   insertDict["image_small"], \
-                                                   insertDict["image_large"], \
-                                                   insertDict["image_medium"], \
-                                                   insertDict["subject_url"], \
-                                                   insertDict["subject_id"], \
-                                                   insertDict["mobile_url"], \
-                                                   insertDict["title"], \
-                                                   insertDict["do_count"], \
-                                                   insertDict["seasons_count"], \
-                                                   insertDict["schedule_url"], \
-                                                   insertDict["episodes_count"], \
-                                                   insertDict["genres"], \
-                                                   insertDict["current_season"], \
-                                                   insertDict["collect_count"], \
-                                                   insertDict["casts"], \
-                                                   insertDict["countries"], \
-                                                   insertDict["original_title"], \
-                                                   insertDict["summary"], \
-                                                   insertDict["summary_segmentation"], \
-                                                   insertDict["subtype"], \
-                                                   insertDict["directors"], \
-                                                   insertDict["comments_count"], \
-                                                   insertDict["ratings_count"],
-                                                   insertDict["aka"]); \
-                                                   "
+        insertString = '''
+                            "INSERT INTO movie_items(rating_max,"
+                                                "rating_average,"
+                                                "rating_stars,"
+                                                "rating_min,"
+                                                "reviews_count,"
+                                                "wish_count,"
+                                                "douban_site,"
+                                                "year,"
+                                                "image_large,"
+                                                "image_medium,"
+                                                "subject_url,"
+                                                "subject_id,"
+                                                "mobile_url,"
+                                                "title,"
+                                                "do_count,"
+                                                "seasons_count,"
+                                                "schedule_url,"
+                                                "episodes_count,"
+                                                "genres,"
+                                                "current_season,"
+                                                "collect_count,"
+                                                "casts,"
+                                                "countries,"
+                                                "original_title,"
+                                                "summary,"
+                                                "summary_segmentation,"
+                                                "subtype,"
+                                                "directors,"
+                                                "comments_count,"
+                                                "ratings_count,"
+                                                "aka)"
+                                            "values(insertDict['rating_max'],"
+                                                   "insertDict['rating_average'],"
+                                                   "insertDict['rating_stars'],"
+                                                   "insertDict['rating_min'],"
+                                                   "insertDict['reviews_count'],"
+                                                   "insertDict['wish_count'],"
+                                                   "insertDict['douban_site'],"
+                                                   "insertDict['year'],"
+                                                   "insertDict['image_small'],"
+                                                   "insertDict['image_large'],"
+                                                   "insertDict['image_medium'],"
+                                                   "insertDict['subject_url'],"
+                                                   "insertDict['subject_id'],"
+                                                   "insertDict['mobile_url'],"
+                                                   "insertDict['title'],"
+                                                   "insertDict['do_count'],"
+                                                   "insertDict['seasons_count'],"
+                                                   "insertDict['schedule_url'],"
+                                                   "insertDict['episodes_count'],"
+                                                   "insertDict['genres'],"
+                                                   "insertDict['current_season'],"
+                                                   "insertDict['casts'],"
+                                                   "insertDict['countries'],"
+                                                   "insertDict['original_title'],"
+                                                   "insertDict['summary'],"
+                                                   "insertDict['summary_segmentation'],"
+                                                   "insertDict['subtype'],"
+                                                   "insertDict['directors'],"
+                                                   "insertDict['comments_count'],"
+                                                   "insertDict['ratings_count'],"
+                                                   "insertDict['aka']);"
+                                                   '''
 
 
-
-    pass
+        print insertString
+    except IOError, e:
+        print "IOError Occured!"
 
 def getSeperateFieldFromJson(jsonString):
     pass

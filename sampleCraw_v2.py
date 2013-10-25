@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding:uft-8 -*-
+
 import time
 import urllib2
 import socket
@@ -28,9 +31,11 @@ def main():
     if not os.path.isdir(htmls_dir):
         os.mkdir(htmls_dir)
 
-    id_file = 'id_test'
+    id_file = 'your_id_file'
 
     lines = open(id_file, "r").readlines()
+    print str(len(lines)) + ' html items remaining...'
+    oldRemainingLines = lines
 
     pro_start_time = time.time()
     start_time = time.time()
@@ -50,20 +55,39 @@ def main():
             #if e.code == 403:
                 #break
         path = '%s/%s.html' % (htmls_dir, eid)
-        writeTo(path, data, 'w+')
-        print 'write %s html OK' % (eid)
+        # Check if the file already exists
+        if os.path.exists(path):
+            print '%s html exists and will pass' %(eid)
+        else:
+            writeTo(path, data, 'w+')
+            print 'write %s html OK' % (eid)
         time.sleep(3)
-        count+=1
+        count += 1
         if count % 10 == 0:
-            time.sleep(1)
-            #print 'crawled %s ids, restart, programs have running %.2f min' % (count, (time.time() - pro_start_time) / 60.0)
-            lines = open(id_file, "r").readlines()
-            lines = lines[count:]
-            f = open(id_file, "w+")
-            [f.write('%s' % l) for l in lines]
-            f.close()
-            print 'rewrite txt,delete 10'
-            #restart_program()
-            break
-            return 1
-            
+            break;
+
+    #if len(lines) < 10:
+    #   print 'All html items crawled.'
+
+    if True:
+       #print 'count = %s, lines = %s' % (count, len(lines))
+       time.sleep(1)
+       #print 'crawled %s ids, restart, programs have running %.2f min' % (count, (time.time() - pro_start_time) / 60.0)
+       lines = open(id_file, "r").readlines()
+       lines = lines[count:]
+       f = open(id_file, "w+")
+       [f.write('%s' % l) for l in lines]
+       f.close()
+       print 'rewrite txt,delete %s' % (count)
+       #restart_program()
+       #break
+
+    if len(oldRemainingLines) < 10:
+        print 'All Done, Program will exit!'
+        return 0,count
+    else:
+        print 'Processed %s html items...' % (count)
+        return 1,count
+
+
+

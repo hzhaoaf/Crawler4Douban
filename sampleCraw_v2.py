@@ -46,9 +46,9 @@ for line in lines:
         data = urllib2.urlopen(url).read()
     except Exception, e:
         data = 'no data'
-        print 'error occured %s id %s' % (e.code, eid)
-        if e.code == 403:
-            break
+        print 'error occured %s id %s' % (e, eid)
+        time.sleep(10)
+        continue
     path = '%s/%s.html' % (htmls_dir, eid)
     writeTo(path, data, 'w+')
     time.sleep(3)

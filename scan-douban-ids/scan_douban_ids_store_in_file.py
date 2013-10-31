@@ -37,12 +37,15 @@ def check_album_id():
         try:
             albumid = id_queue.get()
             print 'Checking ID:' + str(albumid)
-            if albumid % 100000 == 0:
-                 print 'test album id %s crawled %s movies cost %.2fmin' % (albumid, cnt, (time.time() - pro_start) / 60.0)
+
             if albumid == None:
                  id_queue.task_done()
                  break
                  return
+
+            if albumid % 100000 == 0:
+                 print 'test album id %s crawled %s movies cost %.2fmin' % (albumid, cnt, (time.time() - pro_start) / 60.0)
+
             conn = httplib.HTTPConnection("www.douban.com")
             conn.request(method='GET', url='/subject/' + str(albumid) + '/', headers=headers)
             response = conn.getresponse()

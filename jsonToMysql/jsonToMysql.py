@@ -536,7 +536,7 @@ def getJsonStringFromJsonFileUsingDecoder(jsonFileName):
 # Main Routine
 if __name__ == '__main__':
     jsonDirectorys = ['./jsonData'] # You can add more directories here into the list
-    
+
 	mysqlLogFile = './mysqlQuery.sql'
     fileMode = 'w+'
     newLineToken = '\n'

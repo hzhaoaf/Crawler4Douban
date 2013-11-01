@@ -24,7 +24,7 @@ INDEX_DIR = "/home/rio/tmp_index2"
 FIELD = 'name'
 #---end config---
 
-import constants.py
+from sqlConstants import *
 
 def run(searcher, analyzer):
     while True:

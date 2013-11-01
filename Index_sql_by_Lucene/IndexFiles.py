@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-INDEX_DIR = "/home/rio/tmp_index"
+
 
 import sys, os, lucene, threading, time
 from datetime import datetime
@@ -13,14 +13,28 @@ from org.apache.lucene.index import FieldInfo, IndexWriter, IndexWriterConfig
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.util import Version
 
-"""
-This class is loosely based on the Lucene (java implementation) demo class 
-org.apache.lucene.demo.IndexFiles.  It will take a directory as an argument
-and will index all of the files in that directory and downward recursively.
-It will index on the file path, the file name and the file contents.  The
-resulting Lucene index will be placed in the current directory and called
-'index'.
-"""
+import MySQLdb as mdb
+
+from sqlConstants import *
+
+#what need to do 
+#step 1. change config below
+#step 2. make right connection to the sql
+#step 3. choose right table
+#step 4. select the field of the table you need to index or store
+
+
+#------step 1------
+#---start config---
+
+#the dir to store the index file
+INDEX_DIR = "/home/rio/tmp_index2"
+#the field name you want to index
+FIELD = 'name'
+
+#---end config---
+
+
 
 class Ticker(object):
 
@@ -33,10 +47,10 @@ class Ticker(object):
             sys.stdout.flush()
             time.sleep(1.0)
 
-class IndexFiles(object):
-    """Usage: python IndexFiles <doc_directory>"""
+class IndexMySql(object):
+    """Usage: python IndexFiles.py"""
 
-    def __init__(self, root, storeDir, analyzer):
+    def __init__(self, storeDir, analyzer):
 
         if not os.path.exists(storeDir):
             os.mkdir(storeDir)
@@ -47,7 +61,7 @@ class IndexFiles(object):
         config.setOpenMode(IndexWriterConfig.OpenMode.CREATE)
         writer = IndexWriter(store, config)
 
-        self.indexDocs(root, writer)
+        self.indexTable(writer)
         ticker = Ticker()
         print 'commit index',
         threading.Thread(target=ticker.run).start()
@@ -56,7 +70,14 @@ class IndexFiles(object):
         ticker.tick = False
         print 'done'
 
-    def indexDocs(self, root, writer):
+    def indexTable(self, writer):
+
+        #connection 
+        con = None
+
+        #define the index of all the fields
+        #---------step 2----------
+        con = mdb.connect('localhost','testuser','test623','testdb')
 
         t1 = FieldType()
         t1.setIndexed(True)
@@ -66,42 +87,49 @@ class IndexFiles(object):
         
         t2 = FieldType()
         t2.setIndexed(True)
-        t2.setStored(False)
+        t2.setStored(True)
         t2.setTokenized(True)
         t2.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS)
         
-        for root, dirnames, filenames in os.walk(root):
-            for filename in filenames:
-                if not filename.endswith('.txt'):
-                    continue
-                print "adding", filename
-                try:
-                    path = os.path.join(root, filename)
-                    file = open(path)
-                    contents = unicode(file.read(), 'utf-8')
-                    file.close()
-                    doc = Document()
-                    doc.add(Field("name", filename, t1))
-                    doc.add(Field("path", root, t1))
-                    if len(contents) > 0:
-                        doc.add(Field("contents", contents, t2))
-                    else:
-                        print "warning: no content in %s" % filename
-                    writer.addDocument(doc)
-                except Exception, e:
-                    print "Failed in indexDocs:", e
+        with con:
+            cur = con.cursor()
+            #------step 3------
+            cur.execute("SELECT * FROM Writers12")
+
+            numrows = int(cur.rowcount)
+            print 'numrows:',numrows
+            for i in range(numrows):
+                row = cur.fetchone()
+
+                #------step 4------
+                people_name = row[NAME]  
+
+                peo_name_unicoded = unicode(people_name, 'utf-8')
+                print peo_name_unicoded
+                #file.close()
+                doc = Document()
+                #doc.add(Field("name", filename, t1))
+                #doc.add(Field("path", root, t1))
+                if len(people_name) > 0:
+
+                    print 'Id:'+str(row[ID])+'--->'+'Name:'+row[NAME]
+                    doc.add(Field(FIELD, people_name, t2))
+                else:
+                    print "warning: no content in %s" % filename
+                writer.addDocument(doc)
+
+
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print IndexFiles.__doc__
+    if len(sys.argv) !=1:
+        print IndexMySql.__doc__
         sys.exit(1)
     lucene.initVM(vmargs=['-Djava.awt.headless=true'])
     print 'lucene', lucene.VERSION
     start = datetime.now()
     try:
         base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-        IndexFiles(sys.argv[1], os.path.join(base_dir, INDEX_DIR),
-                   StandardAnalyzer(Version.LUCENE_CURRENT))
+        IndexMySql(os.path.join(base_dir, INDEX_DIR), StandardAnalyzer(Version.LUCENE_CURRENT))
         end = datetime.now()
         print end - start
     except Exception, e:

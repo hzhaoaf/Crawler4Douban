@@ -10,6 +10,7 @@ import MySQLdb as mdb
 import sys
 import glob
 import os
+import time
 
 # Test MySQLdb module
 '''
@@ -150,13 +151,28 @@ create_movie_items_table = "CREATE TABLE IF NOT EXISTS \
 #print create_movie_items_table
 
 def processingJsonFilesInDirectory(jsonDirectory, databaseConnection, databaseCursor):
+    # To deprecate 'local variable xxx referenced before assignment'
+    global numberOfJsonFiles
+    global fileListDetialOfDirectories
+
     try:
         jsonFileList = getJsonFileListFromDirectory(jsonDirectory)
         print 'Will process %d JSON Files...' % (len(jsonFileList))
+        numberOfJsonFiles += len(jsonFileList)
+        fileListDetialOfDirectories += '%s has %d JSON Files.\n' % (jsonDirectory, len(jsonFileList))
+
+        # Log files to be processed
+        for jsonFile in jsonFileList:
+            toBeProcessedJsonList.write(jsonFile + newLineToken)
+
+        # Process happens here
         for jsonFile in jsonFileList:
             print 'Now processing %s' % (jsonFile)
             insertMysqlRecordFromJson(jsonFile, databaseCursor)
+
+        # Commit the transaction, do remember for the InnoDB Engine
         databaseConnection.commit()
+
     except Exception as e:
         print e.args
 
@@ -382,6 +398,7 @@ insertStringWithAllStringValues = (
 #print insertStringWithAllStringValues
 
 def insertMysqlRecordFromJson(jsonFileName, databaseCursor):
+    global processedFiles
     try:
         # Get raw JSON
         jsonString = getJsonStringFromJsonFile(jsonFileName)
@@ -389,10 +406,24 @@ def insertMysqlRecordFromJson(jsonFileName, databaseCursor):
         # Get seperate fields of JSON
         insertValues = getSeperateFieldFromJson(jsonString)
 
+        # Concatenate the Query for logging
+        mysqlInsertQueryString = insertStringWithAllStringValues + str(insertValues) + newLineToken
+        logFile.write(mysqlInsertQueryString)
+
         #databaseCursor.execute(insertStringWithValues, insertValues)
-        databaseCursor.execute(insertStringWithAllStringValues, insertValues)
+        affectedRows = databaseCursor.execute(insertStringWithAllStringValues, insertValues)
+
+        # Processed one JSON file
+        processedJsonFileName = jsonFileName + newLineToken
+        processedJsonList.write(processedJsonFileName)
+        processedFiles += 1
+
     except IOError, e:
-        print "IOError occured!"
+        print "IOError occured! %d %s" % (e.args[0], e.args[1])
+    except mdb.Error, e:
+        print "Database Error: %d %s" % (e.args[0], e.args[1])
+    except Exception, e:
+        print "Database Error: %d %s" % (e.args[0], e.args[1])
 
 def getSeperateFieldFromJson(jsonString):
     try:
@@ -419,10 +450,10 @@ def getSeperateFieldFromJson(jsonString):
         # Casts and directors will be used their related IDs
         insertDict['casts'] = ''
         insertDict['directors'] = ''
-        insertDict['summary'] = ''
-        insertDict['genres'] = ''
-        insertDict['countries'] = ''
-        insertDict['aka'] = ''
+        #insertDict['summary'] = ''
+        insertDict['genres'] = '..'.join(insertDict['genres'])
+        insertDict['countries'] = '.. '.join(insertDict['countries'])
+        insertDict['aka'] = '..'.join(insertDict['aka'])
 
         '''
         print insertDict['max']
@@ -489,6 +520,8 @@ def getJsonStringFromJsonFile(jsonFileName):
         return jsonString
     except IOError:
         print "IOError occured!"
+    except ValueError, e:
+        print "Error %d %s" % (e.args[0], e.args[1])
 
 def getJsonStringFromJsonFileUsingDecoder(jsonFileName):
     try:
@@ -503,11 +536,27 @@ def getJsonStringFromJsonFileUsingDecoder(jsonFileName):
 # Main Routine
 if __name__ == '__main__':
     jsonDirectorys = ['./jsonData'] # You can add more directories here into the list
-    tableName = 'movie_items'
+
+	mysqlLogFile = './mysqlQuery.sql'
+    fileMode = 'w+'
+    newLineToken = '\n'
+
+	tableName = 'movie_items'
     hostName = 'your_host_name' # Typically use 'localhost'
     userName = 'your_user_name'
     userPassword = 'your_user_password'
     databaseName = 'your_database_name'
+
+	numberOfJsonFiles = 0
+    processedFiles = 0
+    fileListDetialOfDirectories = ''
+
+    toBeProcessedFileList = './toBeProcessedJsonFiles'
+    processedJsonFileList = './processedJsonFiles'
+
+    # Profiling
+    startTime = 0
+    endTime = 0
 
     try:
         con = mdb.connect(hostName, userName, userPassword, databaseName)
@@ -535,6 +584,17 @@ if __name__ == '__main__':
             print 'Table %s will be created...' % (tableName)
             cur.execute(create_movie_items_table)
 
+        # For multiple databases and same tableName used, create table anyway
+        cur.execute(create_movie_items_table)
+
+        # Open file for logging
+        logFile = open(mysqlLogFile,fileMode)
+        processedJsonList = open(processedJsonFileList, fileMode)
+        toBeProcessedJsonList = open(toBeProcessedFileList, fileMode)
+
+        # Start Profiling
+        startTime = time.time()
+
         # Go and insert records
         for jsonDirectory in jsonDirectorys:
             if os.path.exists(jsonDirectory):
@@ -548,8 +608,24 @@ if __name__ == '__main__':
         cur.close()
         con.close()
 
-        print 'All Done'
-    except IOError:
-        print "IOError occured!"
+        #End Profiling
+        endTime = time.time()
+
+        # Close Log File
+        logFile.close()
+        processedJsonList.close()
+        toBeProcessedJsonList.close()
+
+        print '\nReport:'
+        print 'Start time: %s' % (time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(startTime)))
+        print 'Have %d files to process' % (numberOfJsonFiles)
+        print 'Details are:'
+        print fileListDetialOfDirectories
+        print 'Processed %d files in total' % (processedFiles)
+        print 'End time: %s' % (time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(endTime)))
+        print 'Cost %.2f minutes.' % ((endTime - startTime) / 60)
+        print 'All Done!'
+    except IOError, e:
+        print "IOError occured! %d %s" % (e.args[0], e.args[1])
     except mdb.Error, e:
         print "Error: %d %s" % (e.args[0], e.args[1])

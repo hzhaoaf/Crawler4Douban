@@ -5,6 +5,7 @@
 import sys, os, lucene
 
 from java.io import File
+from org.apache.lucene.queryparser.classic import MultiFieldQueryParser
 from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.index import DirectoryReader
 from org.apache.lucene.queryparser.classic import QueryParser
@@ -21,7 +22,7 @@ from sqlConstants import *
 #------step 1------
 #---start config---
 #the dir to store the index file
-INDEX_DIR = "/home/rio/tmp_index2"
+INDEX_DIR = "/home/rio/workspace/lucene_index"
 #the field name you want to search
 FIELD = 'summary'
 #---end config---
@@ -39,11 +40,23 @@ def run(searcher, analyzer):
         print
         print "Searching for:", command
 
-        #Query query = new MultiFieldQueryParser.parse(“word”,new String[]{“title”,”content”},analyzer); 
-        #在title和content中找word
+        #query = MultiFieldQueryParser(Version.LUCENE_CURRENT,['subject_id','summary'],analyzer).parse(command); 
+        #query = MultiFieldQueryParser.parse(command,['subject_id','summary'],analyzer); 
 
-        query = QueryParser(Version.LUCENE_CURRENT, FIELD,
-                            analyzer).parse(command)
+        parser = MultiFieldQueryParser(Version.LUCENE_CURRENT, ['subject_id','summary'],analyzer)
+        query = MultiFieldQueryParser.parse(parser, command)
+        #在title和content中找word
+      	'''I think there's a bug with the method binding.  MultiFieldQueryParser has several static parse
+		methods, plus the inherited regular method from QueryParser.  It looks like all of them are
+		being resolved as if they were static.  As a workaround, you can call it like this:
+
+		parser = lucene.MultiFieldQueryParser(lucene.Version.LUCENE_CURRENT, ["payload","subject"],
+		analyzer)
+		lucene.MultiFieldQueryParser.parse(parser, command)
+		'''
+
+
+        #query = QueryParser(Version.LUCENE_CURRENT, FIELD,analyzer).parse(command)
         scoreDocs = searcher.search(query, 50).scoreDocs
         print "%s total matching documents." % len(scoreDocs)
 

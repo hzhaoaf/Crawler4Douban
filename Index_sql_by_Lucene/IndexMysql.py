@@ -28,7 +28,7 @@ from sqlConstants import *
 #---start config---
 
 #the dir to store the index file
-INDEX_DIR = "/home/rio/tmp_index2"
+INDEX_DIR = "/home/rio/workspace/lucene_index"
 #the field name you want to index
 FIELD = 'summary'
 
@@ -77,7 +77,7 @@ class IndexMySql(object):
 
         #define the index of all the fields
         #---------step 2----------
-        con = mdb.connect('localhost','testuser','test623','testdb')
+        con = mdb.connect('localhost','nger','nger','moviedata')
 
         t1 = FieldType()
         t1.setIndexed(True)

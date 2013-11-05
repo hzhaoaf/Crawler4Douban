@@ -5,13 +5,15 @@
 import sys, os, lucene
 
 from java.io import File
-from org.apache.lucene.queryparser.classic import MultiFieldQueryParser
+from lucene import JArray
 from org.apache.lucene.analysis.standard import StandardAnalyzer
+from org.apache.lucene.queryparser.classic import MultiFieldQueryParser
 from org.apache.lucene.index import DirectoryReader
 from org.apache.lucene.queryparser.classic import QueryParser
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.search import IndexSearcher
 from org.apache.lucene.util import Version
+from org.apache.lucene.search import BooleanClause
 
 from sqlConstants import *
 
@@ -38,15 +40,30 @@ def run(searcher, analyzer):
             return
 
         print
-        print "Searching for:", command
+        command_list = command.split();
+        subject_id_k = command_list[0]
+        summary_k = command_list[1]
+        command_jarr = JArray('string')([subject_id_k,summary_k])
+        #print "Searching for:", subject_id_k,'in title and',summary_k,'in summary'
+        fields_jarr = JArray('string')(['subject_id','summary'])
 
         #query = MultiFieldQueryParser(Version.LUCENE_CURRENT,['subject_id','summary'],analyzer).parse(command); 
         #query = MultiFieldQueryParser.parse(command,['subject_id','summary'],analyzer); 
 
-        parser = MultiFieldQueryParser(Version.LUCENE_CURRENT, ['subject_id','summary'],analyzer)
-        query = MultiFieldQueryParser.parse(parser, command)
-        #在title和content中找word
-      	'''I think there's a bug with the method binding.  MultiFieldQueryParser has several static parse
+        #'''
+        #MultiFieldQueryParser(Version matchVersion, String[] fields, Analyzer analyzer)
+        #'''
+        #parser = MultiFieldQueryParser(Version.LUCENE_CURRENT, JArray('string')(['subject_id','summary']),analyzer)
+        #query = MultiFieldQueryParser.parse(parser, command_jarr)
+
+        clauses = JArray('object')([ BooleanClause.Occur.SHOULD,BooleanClause.Occur.SHOULD])
+        query = MultiFieldQueryParser.parse(Version.LUCENE_CURRENT,command_jarr,fields_jarr, clauses, analyzer)
+      	'''
+        Error with:
+        > query = lucene.MultiFieldQueryParser(lucene.Version.LUCENE_CURRENT,
+        > ["payload","subject"], analyzer).parse(command)
+
+        I think there's a bug with the method binding.  MultiFieldQueryParser has several static parse
 		methods, plus the inherited regular method from QueryParser.  It looks like all of them are
 		being resolved as if they were static.  As a workaround, you can call it like this:
 
@@ -55,6 +72,8 @@ def run(searcher, analyzer):
 		lucene.MultiFieldQueryParser.parse(parser, command)
 		'''
 
+        #occ=[BooleanClause.Occur.SHOULD , BooleanClause.Occur.SHOULD]
+        #query = MultiFieldQueryParser.parse(command_list,['subject_id','summary'],occ,analyzer)
 
         #query = QueryParser(Version.LUCENE_CURRENT, FIELD,analyzer).parse(command)
         scoreDocs = searcher.search(query, 50).scoreDocs

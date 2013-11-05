@@ -5,10 +5,19 @@
 import sys, os, lucene, threading, time
 from datetime import datetime
 
+#from lucene import \
+#    NumericField
+
+
 from java.io import File
 from org.apache.lucene.analysis.miscellaneous import LimitTokenCountAnalyzer
 from org.apache.lucene.analysis.standard import StandardAnalyzer
-from org.apache.lucene.document import Document, Field, FieldType
+#from org.apache.lucene.document import NumericField
+#import org.apache.lucene.document.NumericField
+from org.apache.lucene.document import Document, Field, FieldType, FloatField
+#from org.apache.lucene.documents import NumericField
+
+#from org.apache.lucene.document import *
 from org.apache.lucene.index import FieldInfo, IndexWriter, IndexWriterConfig
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.util import Version
@@ -79,6 +88,10 @@ class IndexMySql(object):
         #---------step 2----------
         con = mdb.connect('localhost','nger','nger','moviedata')
 
+        #t_num = FieldType.NumericType it is wrong!!
+        t_num = FieldType()
+        t_num.setStored(False)
+
         t1 = FieldType()
         t1.setIndexed(True)
         t1.setStored(True)
@@ -116,14 +129,36 @@ class IndexMySql(object):
                 subject_id = row[SUBJECT_ID]
 
 
-                #print 'id'+subject_id
+                print 'id'+subject_id
                 #print 'summary'+summary+'end'
 
                 doc = Document()
-                doc.add(Field("subject_id", subject_id, t1))
-                #doc.add(Field("path", root, t1))
+                #fields which should not be analyzed
+                doc.add(FloatField("rating_average",0 if(row[RATING_AVERAGE] is None) else row[RATING_AVERAGE],Field.Store.NO))
+                doc.add(FloatField("rating_stars", float(row[RATING_STARS]), Field.Store.NO))
+                doc.add(FloatField("reviews_count", float(row[REVIEWS_COUNT]), Field.Store.NO))
+                #doc.add(FloatField("year", float(row[YEAR]), Field.Store.NO))
+                doc.add(FloatField("collect_count", float(row[COLLECT_COUNT]), Field.Store.NO))
+                doc.add(FloatField("subject_id", float(subject_id), Field.Store.NO))
+                doc.add(FloatField("comments_count", float(row[COMMENTS_COUNT]), Field.Store.NO))
+                doc.add(FloatField("ratings_count", float(row[RATINGS_COUNT]), Field.Store.NO))
+                
+                
+                #fields which should be analyzed with WhitespaceAnalyzer
+                doc.add(Field("countries", row[COUNTRIES], t2))
+                doc.add(Field("casts", row[CASTS], t2))
+                doc.add(Field("genres", row[GENRES], t2))
+                doc.add(Field("subtype", row[SUBTYPE], t2))
+                doc.add(Field("directors", row[DIRECTORS], t2))
+
+                #fields which should be analyzed with good analyzer
+                doc.add(Field("title", row[TITLE], t2))                
+                doc.add(Field("original_title", row[ORIGINAL_TITLE], t2))
+                doc.add(Field("summary_segmentation", row[SUMMARY_SEGMENTATION], t2))
+                doc.add(Field("aka", row[AKA], t2))
+
                 if len(summary) > 0:
-                    print subject_id +'--->'+':\n    '+ 'summary'
+                    print subject_id +'--->'+':\n    '+ row[TITLE]
                     try:
                         summary_unicoded = unicode(summary, 'utf-8') #test the encoding 
                     except Exception,e:

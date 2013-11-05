@@ -41,10 +41,10 @@ def run(searcher, analyzer):
 
         print
         command_list = command.split();
-        subject_id_k = command_list[0]
+        title_k = command_list[0]
         summary_k = command_list[1]
         command_jarr = JArray('string')([subject_id_k,summary_k])
-        #print "Searching for:", subject_id_k,'in title and',summary_k,'in summary'
+        print "Searching for:", subject_id_k,'in title and',summary_k,'in summary'
         fields_jarr = JArray('string')(['subject_id','summary'])
 
         #query = MultiFieldQueryParser(Version.LUCENE_CURRENT,['subject_id','summary'],analyzer).parse(command); 

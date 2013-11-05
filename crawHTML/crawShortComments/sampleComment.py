@@ -3,12 +3,22 @@
 import urllib2
 import time
 import os
+import cookielib
+import sys
+import socket
 
 import fileUtils
 
+socket.setdefaulttimeout(100)
+
 
 def CrawlCommentsById(eid , num , htmls_dir):
-        start = 0
+
+        cookie_support= urllib2.HTTPCookieProcessor(cookielib.CookieJar())
+	opener = urllib2.build_opener(cookie_support, urllib2.HTTPHandler)
+	urllib2.install_opener(opener)
+	
+	start = 0
 	if not os.path.isdir( htmls_dir + eid):
 		os.mkdir( htmls_dir + eid)		
 	
@@ -32,15 +42,16 @@ def CrawlCommentsById(eid , num , htmls_dir):
 			fileUtils.writeTo(path,data,'w')
 			time.sleep(2)
 	print eid + '    OK'
+	
 
 
 def CrawShortComments(htmls_dir,id_file):
-        #计数器
+	#计数器
 	count = 0
 	score = 0
 	#时间
 	start_time = time.time()
-	end_time = time.time()
+	end_time = time.time()	
 
 	lines = open(id_file, "r").readlines()
 	oldRemainingLines = lines
@@ -54,10 +65,10 @@ def CrawShortComments(htmls_dir,id_file):
 		except Exception, e:
 			print 'this round error'
 		count += 1
-		print 'crawl %s th id:%s, total cost %.2fmin' % (count, eid, (time.time() - start_time) / 60.0)
-
-		if count % 5 == 0:
+		if count % 10 ==0:
+			print 'crawl %s th id:%s, total cost %.2fmin' % (count, eid, (time.time() - start_time) / 60.0)
 			break;
+
 	if True:
                 #print 'count = %s, lines = %s' % (count, len(lines))
                 time.sleep(1)

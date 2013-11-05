@@ -12,7 +12,7 @@ if not os.path.isdir(htmls_dir):
 	os.mkdir(htmls_dir)
 
 #要操作的id文件
-id_file = './ShortCommentsId-1920713--2389554'
+id_file = './ShortCommentsId-1298174--1920665'
 
 start_time = time.time()
 

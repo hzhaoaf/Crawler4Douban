@@ -9,3 +9,11 @@
 	python IndexMysql.py
 ###4.Enjoy it!  
 	python SearchMysql.py
+
+
+
+###what about now?
+The NumericField is now added to the docs of the index(except for 'year')
+
+###What need to be done next ?
+Multiquery: multiFields,different rules for different fields

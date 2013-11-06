@@ -37,7 +37,7 @@ from sqlConstants import *
 #---start config---
 
 #the dir to store the index file
-INDEX_DIR = "/home/rio/workspace/lucene_index"
+INDEX_DIR = "/home/env-shared/NGfiles/lucene_index"
 #the field name you want to index
 FIELD = 'summary'
 
@@ -86,7 +86,7 @@ class IndexMySql(object):
 
         #define the index of all the fields
         #---------step 2----------
-        con = mdb.connect('localhost','nger','nger','moviedata')
+        con = mdb.connect('localhost','root','testgce','douban_movie_v0')
 
         #t_num = FieldType.NumericType it is wrong!!
         t_num = FieldType()
@@ -103,6 +103,13 @@ class IndexMySql(object):
         t2.setStored(False)
         t2.setTokenized(True)
         t2.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS)
+
+        t3 = FieldType()
+        t3.setIndexed(True)
+        t3.setStored(True)
+        t3.setTokenized(True)
+        t3.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS)
+
         
         with con:
             cur = con.cursor()
@@ -134,12 +141,12 @@ class IndexMySql(object):
 
                 doc = Document()
                 #fields which should not be analyzed
-                doc.add(FloatField("rating_average",0 if(row[RATING_AVERAGE] is None) else row[RATING_AVERAGE],Field.Store.NO))
+                doc.add(FloatField("rating_average",float(row[RATING_AVERAGE]),Field.Store.NO))
                 doc.add(FloatField("rating_stars", float(row[RATING_STARS]), Field.Store.NO))
                 doc.add(FloatField("reviews_count", float(row[REVIEWS_COUNT]), Field.Store.NO))
                 #doc.add(FloatField("year", float(row[YEAR]), Field.Store.NO))
                 doc.add(FloatField("collect_count", float(row[COLLECT_COUNT]), Field.Store.NO))
-                doc.add(FloatField("subject_id", float(subject_id), Field.Store.NO))
+                doc.add(FloatField("subject_id", float(subject_id), Field.Store.YES))
                 doc.add(FloatField("comments_count", float(row[COMMENTS_COUNT]), Field.Store.NO))
                 doc.add(FloatField("ratings_count", float(row[RATINGS_COUNT]), Field.Store.NO))
                 
@@ -152,7 +159,7 @@ class IndexMySql(object):
                 doc.add(Field("directors", row[DIRECTORS], t2))
 
                 #fields which should be analyzed with good analyzer
-                doc.add(Field("title", row[TITLE], t2))                
+                doc.add(Field("title", row[TITLE], t3))                
                 doc.add(Field("original_title", row[ORIGINAL_TITLE], t2))
                 doc.add(Field("summary_segmentation", row[SUMMARY_SEGMENTATION], t2))
                 doc.add(Field("aka", row[AKA], t2))

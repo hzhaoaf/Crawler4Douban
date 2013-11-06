@@ -24,7 +24,7 @@ from sqlConstants import *
 #------step 1------
 #---start config---
 #the dir to store the index file
-INDEX_DIR = "/home/rio/workspace/lucene_index"
+INDEX_DIR = "/home/env-shared/NGfiles/lucene_index"
 #the field name you want to search
 FIELD = 'summary'
 #---end config---
@@ -43,9 +43,9 @@ def run(searcher, analyzer):
         command_list = command.split();
         title_k = command_list[0]
         summary_k = command_list[1]
-        command_jarr = JArray('string')([subject_id_k,summary_k])
-        print "Searching for:", subject_id_k,'in title and',summary_k,'in summary'
-        fields_jarr = JArray('string')(['subject_id','summary'])
+        command_jarr = JArray('string')([title_k,summary_k])
+        print "Searching for:", title_k,'in title and',summary_k,'in summary'
+        fields_jarr = JArray('string')(['title','summary'])
 
         #query = MultiFieldQueryParser(Version.LUCENE_CURRENT,['subject_id','summary'],analyzer).parse(command); 
         #query = MultiFieldQueryParser.parse(command,['subject_id','summary'],analyzer); 
@@ -81,7 +81,8 @@ def run(searcher, analyzer):
 
         for scoreDoc in scoreDocs:
             doc = searcher.doc(scoreDoc.doc)
-            print 'subject_id', doc.get('subject_id')
+            print 'subject_id:', doc.get('subject_id')
+            print 'title:', doc.get('title')
             #print 'path:', doc.get("path"), 'name:', doc.get("name")
 
 

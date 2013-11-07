@@ -11,13 +11,10 @@ from datetime import datetime
 
 from java.io import File
 from org.apache.lucene.analysis.miscellaneous import LimitTokenCountAnalyzer
+#from org.apache.lucene.analysis.cn import ChineseAnalyzer
+from org.apache.lucene.analysis.cn.smart import SmartChineseAnalyzer
 from org.apache.lucene.analysis.standard import StandardAnalyzer
-#from org.apache.lucene.document import NumericField
-#import org.apache.lucene.document.NumericField
 from org.apache.lucene.document import Document, Field, FieldType, FloatField
-#from org.apache.lucene.documents import NumericField
-
-#from org.apache.lucene.document import *
 from org.apache.lucene.index import FieldInfo, IndexWriter, IndexWriterConfig
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.util import Version
@@ -72,7 +69,7 @@ class IndexMySql(object):
 
         self.indexTable(writer)
         ticker = Ticker()
-        print 'commit index',
+        print 'commit index'
         threading.Thread(target=ticker.run).start()
         writer.commit()
         writer.close()
@@ -186,7 +183,7 @@ if __name__ == '__main__':
     start = datetime.now()
     #try:
     base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    IndexMySql(os.path.join(base_dir, INDEX_DIR), StandardAnalyzer(Version.LUCENE_CURRENT))
+    IndexMySql(os.path.join(base_dir, INDEX_DIR), SmartChineseAnalyzer(Version.LUCENE_CURRENT))
     end = datetime.now()
     print end - start
     #except Exception, e:

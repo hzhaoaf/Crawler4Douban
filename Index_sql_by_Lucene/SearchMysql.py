@@ -6,7 +6,10 @@ import sys, os, lucene
 
 from java.io import File
 from lucene import JArray
-from org.apache.lucene.analysis.standard import StandardAnalyzer
+#from org.apache.lucene.analysis.standard import StandardAnalyzer
+from org.apache.lucene.analysis.cn.smart import SmartChineseAnalyzer
+#from org.apache.lucene.analysis.cn import ChineseAnalyzer
+
 from org.apache.lucene.queryparser.classic import MultiFieldQueryParser
 from org.apache.lucene.index import DirectoryReader
 from org.apache.lucene.queryparser.classic import QueryParser
@@ -92,6 +95,6 @@ if __name__ == '__main__':
     base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
     directory = SimpleFSDirectory(File(os.path.join(base_dir, INDEX_DIR)))
     searcher = IndexSearcher(DirectoryReader.open(directory))
-    analyzer = StandardAnalyzer(Version.LUCENE_CURRENT)
+    analyzer = SmartChineseAnalyzer(Version.LUCENE_CURRENT)
     run(searcher, analyzer)
     del searcher

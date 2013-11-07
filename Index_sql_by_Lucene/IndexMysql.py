@@ -14,7 +14,7 @@ from org.apache.lucene.analysis.miscellaneous import LimitTokenCountAnalyzer
 #from org.apache.lucene.analysis.cn import ChineseAnalyzer
 from org.apache.lucene.analysis.cn.smart import SmartChineseAnalyzer
 from org.apache.lucene.analysis.standard import StandardAnalyzer
-from org.apache.lucene.document import Document, Field, FieldType, FloatField
+from org.apache.lucene.document import Document, Field, FieldType, FloatField,IntField
 from org.apache.lucene.index import FieldInfo, IndexWriter, IndexWriterConfig
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.util import Version
@@ -83,7 +83,7 @@ class IndexMySql(object):
 
         #define the index of all the fields
         #---------step 2----------
-        con = mdb.connect('localhost','root','testgce','douban_movie_v0')
+        con = mdb.connect('localhost','root','testgce','moviedata')
 
         #t_num = FieldType.NumericType it is wrong!!
         t_num = FieldType()
@@ -140,12 +140,12 @@ class IndexMySql(object):
                 #fields which should not be analyzed
                 doc.add(FloatField("rating_average",float(row[RATING_AVERAGE]),Field.Store.NO))
                 doc.add(FloatField("rating_stars", float(row[RATING_STARS]), Field.Store.NO))
-                doc.add(FloatField("reviews_count", float(row[REVIEWS_COUNT]), Field.Store.NO))
+                doc.add(IntField("reviews_count", int(row[REVIEWS_COUNT]), Field.Store.NO))
                 #doc.add(FloatField("year", float(row[YEAR]), Field.Store.NO))
-                doc.add(FloatField("collect_count", float(row[COLLECT_COUNT]), Field.Store.NO))
-                doc.add(FloatField("subject_id", float(subject_id), Field.Store.YES))
-                doc.add(FloatField("comments_count", float(row[COMMENTS_COUNT]), Field.Store.NO))
-                doc.add(FloatField("ratings_count", float(row[RATINGS_COUNT]), Field.Store.NO))
+                doc.add(IntField("collect_count", int(row[COLLECT_COUNT]), Field.Store.NO))
+                doc.add(IntField("subject_id", int(subject_id), Field.Store.YES))
+                doc.add(IntField("comments_count", int(row[COMMENTS_COUNT]), Field.Store.NO))
+                doc.add(IntField("ratings_count", int(row[RATINGS_COUNT]), Field.Store.NO))
                 
                 
                 #fields which should be analyzed with WhitespaceAnalyzer

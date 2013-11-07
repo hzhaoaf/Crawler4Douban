@@ -10,6 +10,10 @@
 ###4.Enjoy it!  
 	python SearchMysql.py
 
+type in：
+	title keyword_of_summary
+like：
+	>>神都龙王 狄仁杰
 
 
 ###what about now?

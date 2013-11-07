@@ -35,6 +35,7 @@ def CrawlCommentsById(eid , num , htmls_dir):
 				data = urllib2.urlopen(url).read()
 			except Exception, e:
 				data = 'no data'
+				print e.code
 				print 'this id : %s  has some error' % eid
 							
 			path = htmls_dir + eid + '/' + str(start) + '.html'
@@ -43,6 +44,9 @@ def CrawlCommentsById(eid , num , htmls_dir):
 			time.sleep(2)
 	print eid + '    OK'
 	
+def restart_program():
+    python = sys.executable
+    os.execl(python, python, * sys.argv)
 
 
 def CrawShortComments(htmls_dir,id_file):
@@ -65,7 +69,7 @@ def CrawShortComments(htmls_dir,id_file):
 		except Exception, e:
 			print 'this round error'
 		count += 1
-		if count % 10 ==0:
+		if count % 2 ==0:
 			print 'crawl %s th id:%s, total cost %.2fmin' % (count, eid, (time.time() - start_time) / 60.0)
 			break;
 
@@ -78,8 +82,9 @@ def CrawShortComments(htmls_dir,id_file):
                 [f.write('%s' % l) for l in lines]
                 f.close()
                 print 'rewrite txt,delete %s' % (count)
+                #restart_program()
 
-        if len(oldRemainingLines) < 5:
+        if len(oldRemainingLines) < 2:
                 print 'All Done, Program will exit!'
                 return 0,count
         else:

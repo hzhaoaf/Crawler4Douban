@@ -17,8 +17,30 @@ For Django part, I recommend again the official guide:
 Though there are not so many 5-minute tutorials, the official document and `The Django Book` both did a awesome job!!!
 
 Installation On a Debian Wheezy machine is tricky using `apt-get` really, something like:
+
     sudo apt-get install python-django
     sudo apt-get install python-mysqldb
     sudo apt-get install libapache2-mod-wsgi
 
+To simply start a project,
+
+    django-admin startproject your_project_name
+
+To debug on localhost utilizing Django's lightweight http server,
+    
+    python manage.py runserver
+
+To make your database begin to work,
+
+    vi your_project_name/your_project_name/setting.py
+    python manage.py syncdb
+
+To start an app,
+
+    python manage.py startapp your_app_name
+
 All left to you is to config your URL router and implement your views, also cheers:-)
+
+**Note:**
+
+Please refer to the official guide since I got very confused when I try to refer to some blogs, basically due to they are using **OLD** Django and **deprecated** mod_python. Trust me, it's worth your time!

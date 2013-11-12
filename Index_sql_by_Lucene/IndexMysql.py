@@ -21,6 +21,7 @@ from org.apache.lucene.util import Version
 
 import MySQLdb as mdb
 
+
 from sqlConstants import *
 
 #what need to do 
@@ -83,7 +84,7 @@ class IndexMySql(object):
 
         #define the index of all the fields
         #---------step 2----------
-        con = mdb.connect('localhost','root','testgce','douban_movie_v0')
+        con = mdb.connect('localhost','root','testgce','moviedata')
 
         #t_num = FieldType.NumericType it is wrong!!
         t_num = FieldType()
@@ -146,14 +147,14 @@ class IndexMySql(object):
                 doc.add(IntField("subject_id", int(subject_id), Field.Store.YES))
                 doc.add(IntField("comments_count", int(row[COMMENTS_COUNT]), Field.Store.NO))
                 doc.add(IntField("ratings_count", int(row[RATINGS_COUNT]), Field.Store.NO))
-                
-                
+                doc.add(Field("image_small", row[IMAGE_SMALL], t1))
+
                 #fields which should be analyzed with WhitespaceAnalyzer
                 doc.add(Field("countries", row[COUNTRIES], t2))
                 doc.add(Field("casts", row[CASTS], t2))
                 doc.add(Field("genres", row[GENRES], t2))
                 doc.add(Field("subtype", row[SUBTYPE], t2))
-                doc.add(Field("directors", row[DIRECTORS], t2))
+                doc.add(Field("directors", row[DIRECTORS], t3))
 
                 #fields which should be analyzed with good analyzer
                 doc.add(Field("title", row[TITLE], t3))                

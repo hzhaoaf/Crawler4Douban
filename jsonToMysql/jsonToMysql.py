@@ -135,13 +135,13 @@ create_movie_items_table = "CREATE TABLE IF NOT EXISTS \
                     genres VARCHAR(50), \
                     current_season INT, \
                     collect_count INT, \
-                    casts VARCHAR(30), \
+                    casts VARCHAR(2000), \
                     countries VARCHAR(20), \
                     original_title VARCHAR(100), \
                     summary TEXT, \
                     summary_segmentation TEXT, \
                     subtype VARCHAR(10), \
-                    directors VARCHAR(20), \
+                    directors VARCHAR(1000), \
                     comments_count INT, \
                     ratings_count INT, \
                     aka VARCHAR(50) \
@@ -447,9 +447,12 @@ def getSeperateFieldFromJson(jsonString):
         #print type(insertDict)
 
         # Return values as a tuple for insert
-        # Casts and directors will be used their related IDs
-        insertDict['casts'] = ''
-        insertDict['directors'] = ''
+        # Casts and directors will use their related IDs
+        # However for debugging, we use a Long String here
+        #insertDict['casts'] = '..'.join(str(d) for d in insertDict['casts'])
+        #insertDict['directors'] = '..'.join(str(d) for d in insertDict['directors'])
+        #insertDict['casts'] = str(insertDict['casts'])
+        #insertDict['directors'] = str(insertDict['directors'])
         #insertDict['summary'] = ''
         insertDict['genres'] = '..'.join(insertDict['genres'])
         insertDict['countries'] = '.. '.join(insertDict['countries'])
@@ -488,6 +491,59 @@ def getSeperateFieldFromJson(jsonString):
         print insertDict['ratings_count']
         print insertDict['aka']
         '''
+
+        directorsString = ''
+        #print type(insertDict['directors'])
+        #print insertDict['directors']
+        #print len(insertDict['directors'])
+        for director in insertDict['directors']:
+            #print director
+            for directorsKey in director.keys():
+                #print directorsKey
+                directorsField = director[directorsKey]
+                if directorsField == None:
+                    directorsField = 'None'
+                if hasattr(directorsField, 'keys'):
+                    directorSubKeys = directorsField.keys()
+                    for directorSubKey in directorSubKeys:
+                        #print directorSubKey
+                        if directorsField[directorSubKey] == None:
+                            directorsField[directorSubKey] = 'None'
+                        directorsString += ' '
+                        directorsString += directorsField[directorSubKey]
+                else:
+                    directorsString += '..'
+                    directorsString += directorsField
+
+        castsString = ''
+        #print type(insertDict['casts'])
+        #print insertDict['casts']
+        #print len(insertDict['casts'])
+        for cast in insertDict['casts']:
+            #print cast
+            for castsKey in cast.keys():
+                #print castsKey
+                castsField = cast[castsKey]
+                if castsField == None:
+                    castsField = 'None'
+                if hasattr(castsField, 'keys'):
+                    castSubKeys = castsField.keys()
+                    for castSubKey in castSubKeys:
+                        #print castSubKey
+                        if castsField[castSubKey] == None:
+                            castsField[castSubKey] = 'None'
+                        castsString += ' '
+                        castsString += castsField[castSubKey]
+                else:
+                    castsString += '..'
+                    castsString += castsField
+
+
+        #print directorsString
+        #print castsString
+
+        insertDict['directors'] = directorsString
+        insertDict['casts'] = castsString
 
         insertTuple = (insertDict['max'], insertDict['average'], insertDict['stars'],
                        insertDict['min'], insertDict['reviews_count'], insertDict['wish_count'],

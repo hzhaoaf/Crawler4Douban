@@ -145,6 +145,8 @@ create_movie_items_table = "CREATE TABLE IF NOT EXISTS \
                     comments_count INT, \
                     ratings_count INT, \
                     aka VARCHAR(50) \
+                    user_tags VARCHAR(500) \
+                    others_like VARCHAR(1000) \
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci; \
                     "
 
@@ -218,7 +220,9 @@ insertStringTemplate = (
                                         "directors,"
                                         "comments_count,"
                                         "ratings_count,"
-                                        "aka) "
+                                        "aka,"
+                                        "user_tags,"
+                                        "others_like) "
                                     "values (insertDict['rating_max'],"
                                            "insertDict['rating_average'],"
                                            "insertDict['rating_stars'],"
@@ -249,7 +253,9 @@ insertStringTemplate = (
                                            "insertDict['directors'],"
                                            "insertDict['comments_count'],"
                                            "insertDict['ratings_count'],"
-                                           "insertDict['aka']);"
+                                           "insertDict['aka'],"
+                                           "insertDict['user_tags'],"
+                                           "insertDict['others_like']);"
                                            )
 
 
@@ -289,7 +295,9 @@ insertStringWithValues = (
                                         "directors,"
                                         "comments_count,"
                                         "ratings_count,"
-                                        "aka) "
+                                        "aka,"
+                                        "user_tags,"
+                                        "others_like) "
                                     "values (%d,"
                                            "%f,"
                                            "%s,"
@@ -321,6 +329,8 @@ insertStringWithValues = (
                                            "%s,"
                                            "%d,"
                                            "%d,"
+                                           "%s,"
+                                           "%s,"
                                            "%s);"
                                            )
 
@@ -359,8 +369,12 @@ insertStringWithAllStringValues = (
                                         "directors,"
                                         "comments_count,"
                                         "ratings_count,"
-                                        "aka) "
+                                        "aka,"
+                                        "user_tags,"
+                                        "others_like) "
                                     "values (%s,"
+                                           "%s,"
+                                           "%s,"
                                            "%s,"
                                            "%s,"
                                            "%s,"
@@ -457,6 +471,8 @@ def getSeperateFieldFromJson(jsonString):
         insertDict['genres'] = '..'.join(insertDict['genres'])
         insertDict['countries'] = '.. '.join(insertDict['countries'])
         insertDict['aka'] = '..'.join(insertDict['aka'])
+        insertDict['user_tags'] = ''
+        insertDict['others_like'] = ''
 
         '''
         print insertDict['max']
@@ -556,7 +572,7 @@ def getSeperateFieldFromJson(jsonString):
                        insertDict['original_title'], insertDict['summary'], insertDict['summary'],
                        insertDict['subtype'],
                        insertDict['directors'], insertDict['comments_count'], insertDict['ratings_count'],
-                       insertDict['aka']
+                       insertDict['aka'], insertDict['user_tags'], insertDict['others_like']
                        )
         #print len(insertTuple)
         #print insertTuple

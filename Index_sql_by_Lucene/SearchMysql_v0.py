@@ -49,7 +49,7 @@ def config():
 
 #---end config---
 
-def run(command,searcher, analyzer):
+def run(command,searcher, aWrapper):
 
     print
 
@@ -76,7 +76,7 @@ def run(command,searcher, analyzer):
     #query = MultiFieldQueryParser.parse(parser, command_jarr)
 
     #创建QueryParser对象 默认的搜索域为content 
-    parser = QueryParser(Version.LUCENE_CURRENT, "title", SmartChineseAnalyzer(Version.LUCENE_CURRENT)) 
+    parser = QueryParser(Version.LUCENE_CURRENT, "title", aWrapper) 
     query = parser.parse(command)
 
     '''
@@ -109,7 +109,7 @@ def run(command,searcher, analyzer):
         tmpDict = {
         'subject_id':doc.get('subject_id'),
         'title':doc.get('title'),
-        'directories':doc.get('directories'),
+        'directories':doc.get('directors'),
         'summary':doc.get('summary'),
         'image_small':doc.get('image_small')}
         retList.append(tmpDict)

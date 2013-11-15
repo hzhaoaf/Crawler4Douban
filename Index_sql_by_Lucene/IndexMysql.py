@@ -10,14 +10,18 @@ from datetime import datetime
 
 
 from java.io import File
+from java.util import Map,HashMap
 from org.apache.lucene.analysis.miscellaneous import LimitTokenCountAnalyzer
 #from org.apache.lucene.analysis.cn import ChineseAnalyzer
 from org.apache.lucene.analysis.cn.smart import SmartChineseAnalyzer
 from org.apache.lucene.analysis.standard import StandardAnalyzer
+from org.apache.lucene.analysis.core import WhitespaceAnalyzer
 from org.apache.lucene.document import Document, Field, FieldType, FloatField,IntField
 from org.apache.lucene.index import FieldInfo, IndexWriter, IndexWriterConfig
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.util import Version
+
+from org.apache.lucene.analysis.miscellaneous import PerFieldAnalyzerWrapper
 
 import MySQLdb as mdb
 
@@ -54,19 +58,67 @@ class Ticker(object):
             sys.stdout.flush()
             time.sleep(1.0)
 
+def CreateAWrapper():
+
+		# Map<String,Analyzer> analyzerPerField = new HashMap<String,Analyzer>();
+
+
+	  	analyzerPerField = HashMap()
+		#为所有的域设置不同的analyzer  
+		analyzerPerField.put('rating_max', StandardAnalyzer(Version.LUCENE_CURRENT))
+		analyzerPerField.put('rating_average', StandardAnalyzer(Version.LUCENE_CURRENT))
+		analyzerPerField.put('rating_stars', StandardAnalyzer(Version.LUCENE_CURRENT))
+		analyzerPerField.put('rating_min', StandardAnalyzer(Version.LUCENE_CURRENT))
+		analyzerPerField.put('reviews_count', StandardAnalyzer(Version.LUCENE_CURRENT))
+		analyzerPerField.put('wish_count', StandardAnalyzer(Version.LUCENE_CURRENT))
+		analyzerPerField.put('year', StandardAnalyzer(Version.LUCENE_CURRENT))
+
+		analyzerPerField.put('title', SmartChineseAnalyzer(Version.LUCENE_CURRENT))
+		analyzerPerField.put('original_title', SmartChineseAnalyzer(Version.LUCENE_CURRENT))
+		analyzerPerField.put('summary', SmartChineseAnalyzer(Version.LUCENE_CURRENT))
+		analyzerPerField.put('aka', SmartChineseAnalyzer(Version.LUCENE_CURRENT))
+
+		analyzerPerField.put('genres', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+		analyzerPerField.put('casts', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+		analyzerPerField.put('countries', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+		analyzerPerField.put('summary_segmentation', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+		analyzerPerField.put('subtype', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+		analyzerPerField.put('directors', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+
+		#analyzerPerField.put('douban_site', StandardAnalyzer(Version.LUCENE_CURRENT))注释起来的都是没必要分析的
+		#analyzerPerField.put('image_small', StandardAnalyzer(Version.LUCENE_CURRENT))
+		#analyzerPerField.put('image_large', StandardAnalyzer(Version.LUCENE_CURRENT))
+		#analyzerPerField.put('image_medium', StandardAnalyzer(Version.LUCENE_CURRENT))
+		#analyzerPerField.put('subject_url', StandardAnalyzer(Version.LUCENE_CURRENT))
+		#analyzerPerField.put('subject_id', StandardAnalyzer(Version.LUCENE_CURRENT))
+		#analyzerPerField.put('mobile_url', StandardAnalyzer(Version.LUCENE_CURRENT))
+		#analyzerPerField.put('do_count', StandardAnalyzer(Version.LUCENE_CURRENT))
+		#analyzerPerField.put('seasons_count', StandardAnalyzer(Version.LUCENE_CURRENT))
+		#analyzerPerField.put('schedule_url', StandardAnalyzer(Version.LUCENE_CURRENT))
+		#analyzerPerField.put('episodes_count', StandardAnalyzer(Version.LUCENE_CURRENT))
+		#analyzerPerField.put('current_season', new KeywordAnalyzer(Version.LUCENE_CURRENT))
+		#analyzerPerField.put('collect_count', new KeywordAnalyzer(Version.LUCENE_CURRENT))
+		#analyzerPerField.put('comments_count', StandardAnalyzer(Version.LUCENE_CURRENT))
+		#analyzerPerField.put('ratings_count', StandardAnalyzer(Version.LUCENE_CURRENT))
+
+		aWapper = PerFieldAnalyzerWrapper(SmartChineseAnalyzer(Version.LUCENE_CURRENT),analyzerPerField)
+
+		return aWapper
+
 class IndexMySql(object):
     """Usage: python IndexFiles.py"""
 
-    def __init__(self, storeDir, analyzer):
+    def __init__(self, storeDir, aWrapper):
 
         if not os.path.exists(storeDir):
             os.mkdir(storeDir)
 
         store = SimpleFSDirectory(File(storeDir))
-        analyzer = LimitTokenCountAnalyzer(analyzer, 1048576)
-        config = IndexWriterConfig(Version.LUCENE_CURRENT, analyzer)
+        aWrapper = LimitTokenCountAnalyzer(aWrapper, 1048576)
+        config = IndexWriterConfig(Version.LUCENE_CURRENT, aWrapper)
         config.setOpenMode(IndexWriterConfig.OpenMode.CREATE)
         writer = IndexWriter(store, config)
+
 
         self.indexTable(writer)
         ticker = Ticker()
@@ -108,7 +160,6 @@ class IndexMySql(object):
         t3.setTokenized(True)
         t3.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS)
 
-        
         with con:
             cur = con.cursor()
 
@@ -150,11 +201,11 @@ class IndexMySql(object):
                 doc.add(Field("image_small", row[IMAGE_SMALL], t1))
 
                 #fields which should be analyzed with WhitespaceAnalyzer
-                doc.add(Field("countries", row[COUNTRIES], t2))
-                doc.add(Field("casts", row[CASTS], t2))
-                doc.add(Field("genres", row[GENRES], t2))
-                doc.add(Field("subtype", row[SUBTYPE], t2))
-                doc.add(Field("directors", row[DIRECTORS], t3))
+                doc.add(Field("countries", row[COUNTRIES].replace('..',' '), t3))
+                doc.add(Field("casts",     row[CASTS].replace('..',' '),     t3))
+                doc.add(Field("genres",    row[GENRES].replace('..',' '),    t3))
+                doc.add(Field("subtype",   row[SUBTYPE].replace('..',' '),   t2))
+                doc.add(Field("directors", row[DIRECTORS].replace('..',' '), t3))
 
                 #fields which should be analyzed with good analyzer
                 doc.add(Field("title", row[TITLE], t3))                
@@ -183,8 +234,11 @@ if __name__ == '__main__':
     print 'lucene', lucene.VERSION
     start = datetime.now()
     #try:
+    CreateAWrapper()
+
     base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    IndexMySql(os.path.join(base_dir, INDEX_DIR), SmartChineseAnalyzer(Version.LUCENE_CURRENT))
+    aWrapper = CreateAWrapper()
+    IndexMySql(os.path.join(base_dir, INDEX_DIR), aWrapper)
     end = datetime.now()
     print end - start
     #except Exception, e:

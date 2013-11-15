@@ -23,7 +23,8 @@ type in like：
 
 
 ###what about now?
-The NumericField is now added to the docs of the index(except for 'year')
+Use whitespaceAnalyzer instead of SCAnalyzer to index and search casts and dorectors
 
 ###What need to be done next ?
-Multiquery: multiFields,different rules for different fields
+1. Debug Log of the test query
+2. the poor structure of the code

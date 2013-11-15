@@ -7,14 +7,16 @@ from django.utils.http import urlquote
 import urllib
 
 import SearchMysql_v0
-
+import IndexMysql
 '''
 Interface for querying from App
 Use standard GET request
 Return JSON
 '''
 
+
 SearchMysql_v0.initJvm()
+
 
 def search(request):
     #try:
@@ -24,23 +26,16 @@ def search(request):
         command = urllib.unquote(request.GET['command'])
         start = int(urllib.unquote(request.GET['start']))#start 规定从0开始
         count = int(urllib.unquote(request.GET['count']))
-        #count = urllib.unquote(request.GET['count'])
-        #command = command.encode('utf8')
 
-
-        #command_unicoded = unicode(command, 'utf-8') #test the encoding 
-
-        #command = request.GET['command']
-        #keyValue = request.GET['keyValue']
 
         # Here goes the PyLucene routines, fetch results and construct json
         # We can construct a standard Python Dictionary and then convert it to JSON
         # Examples for returning JSON are demonstrated blow
 
         
-
+        aWrapper = IndexMysql.CreateAWrapper()
         searcher,analyzer = SearchMysql_v0.config()
-        retList = SearchMysql_v0.run(command,searcher,analyzer)
+        retList = SearchMysql_v0.run(command,searcher,aWrapper)
 
         ansCount = len(retList)
 

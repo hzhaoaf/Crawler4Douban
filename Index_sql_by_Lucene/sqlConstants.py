@@ -30,6 +30,8 @@ DIRECTORS           =28 #29
 COMMENTS_COUNT      =29 #30
 RATINGS_COUNT       =30 #31
 AKA                 =31 #32
+USER_TAGS  		    =32 #31
+OTHERS_LIKE         =33 #32
 
 fields_name_list = \
 [\
@@ -65,13 +67,22 @@ fields_name_list = \
 'comments_count',\
 'ratings_count',\
 'aka',\
+'user_tags',\
+'others_like',\
 ]
 #constant's name ------->field name 
 #constant's value------->field order in table 
 
 FIELDS_NUM = len(fields_name_list)
 
+
+split_sym = '￥'
+split_sym2 = '=>'
+
+
 # for test 
 ID = 0
 NAME = 1
+
 #---end define constants---
+

@@ -28,3 +28,9 @@ Use whitespaceAnalyzer instead of SCAnalyzer to index and search casts and dorec
 ###What need to be done next ?
 1. Debug Log of the test query
 2. the poor structure of the code
+
+###attention 
+1.	use 
+
+		sudo python IndexMysql.py
+	you'll get a JavaError without *sudo*.

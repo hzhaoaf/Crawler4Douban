@@ -18,6 +18,8 @@ from org.apache.lucene.search import IndexSearcher
 from org.apache.lucene.util import Version
 from org.apache.lucene.search import BooleanClause
 
+from org.apache.lucene.search.similarities import BM25Similarity
+
 import json
 from sqlConstants import *
 
@@ -43,6 +45,8 @@ def config():
     base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
     directory = SimpleFSDirectory(File(os.path.join(base_dir, INDEX_DIR)))
     searcher = IndexSearcher(DirectoryReader.open(directory))
+    bm25Sim = BM25Similarity() #BM25 with these default values: k1 = 1.2, b = 0.75.
+    searcher.setSimilarity(bm25Sim)
     analyzer = SmartChineseAnalyzer(Version.LUCENE_CURRENT)
     return searcher,analyzer
 
@@ -114,6 +118,7 @@ def run(command,searcher, aWrapper):
         'image_small':doc.get('image_small')}
         retList.append(tmpDict)
 
+    print retList.encode('utf-8')
 
     return retList
 
@@ -131,5 +136,6 @@ if __name__ == '__main__':
     directory = SimpleFSDirectory(File(os.path.join(base_dir, INDEX_DIR)))
     searcher = IndexSearcher(DirectoryReader.open(directory))
     analyzer = SmartChineseAnalyzer(Version.LUCENE_CURRENT)
-    run(searcher, analyzer)
+    command = sys.argv[1]
+    run(command,searcher, analyzer)
     del searcher

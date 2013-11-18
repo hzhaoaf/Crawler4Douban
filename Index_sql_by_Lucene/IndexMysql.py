@@ -20,6 +20,7 @@ from org.apache.lucene.document import Document, Field, FieldType, FloatField,In
 from org.apache.lucene.index import FieldInfo, IndexWriter, IndexWriterConfig
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.util import Version
+from org.apache.lucene.search.similarities import BM25Similarity
 
 from org.apache.lucene.analysis.miscellaneous import PerFieldAnalyzerWrapper
 
@@ -48,7 +49,6 @@ FIELD = 'summary'
 
 
 class Ticker(object):
-
     def __init__(self):
         self.tick = True
 
@@ -60,50 +60,52 @@ class Ticker(object):
 
 def CreateAWrapper():
 
-		# Map<String,Analyzer> analyzerPerField = new HashMap<String,Analyzer>();
+        # Map<String,Analyzer> analyzerPerField = new HashMap<String,Analyzer>();
 
 
-	  	analyzerPerField = HashMap()
-		#为所有的域设置不同的analyzer  
-		analyzerPerField.put('rating_max', StandardAnalyzer(Version.LUCENE_CURRENT))
-		analyzerPerField.put('rating_average', StandardAnalyzer(Version.LUCENE_CURRENT))
-		analyzerPerField.put('rating_stars', StandardAnalyzer(Version.LUCENE_CURRENT))
-		analyzerPerField.put('rating_min', StandardAnalyzer(Version.LUCENE_CURRENT))
-		analyzerPerField.put('reviews_count', StandardAnalyzer(Version.LUCENE_CURRENT))
-		analyzerPerField.put('wish_count', StandardAnalyzer(Version.LUCENE_CURRENT))
-		analyzerPerField.put('year', StandardAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField = HashMap()
+        #为所有的域设置不同的analyzer  
+        analyzerPerField.put('rating_max', StandardAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('rating_average', StandardAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('rating_stars', StandardAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('rating_min', StandardAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('reviews_count', StandardAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('wish_count', StandardAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('year', StandardAnalyzer(Version.LUCENE_CURRENT))
 
-		analyzerPerField.put('title', SmartChineseAnalyzer(Version.LUCENE_CURRENT))
-		analyzerPerField.put('original_title', SmartChineseAnalyzer(Version.LUCENE_CURRENT))
-		analyzerPerField.put('summary', SmartChineseAnalyzer(Version.LUCENE_CURRENT))
-		analyzerPerField.put('aka', SmartChineseAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('title', SmartChineseAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('original_title', SmartChineseAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('summary', SmartChineseAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('aka', SmartChineseAnalyzer(Version.LUCENE_CURRENT))
 
-		analyzerPerField.put('genres', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
-		analyzerPerField.put('casts', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
-		analyzerPerField.put('countries', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
-		analyzerPerField.put('summary_segmentation', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
-		analyzerPerField.put('subtype', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
-		analyzerPerField.put('directors', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('genres', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('casts', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('countries', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('summary_segmentation', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('subtype', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('directors', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('user_tags', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('others_like', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
 
-		#analyzerPerField.put('douban_site', StandardAnalyzer(Version.LUCENE_CURRENT))注释起来的都是没必要分析的
-		#analyzerPerField.put('image_small', StandardAnalyzer(Version.LUCENE_CURRENT))
-		#analyzerPerField.put('image_large', StandardAnalyzer(Version.LUCENE_CURRENT))
-		#analyzerPerField.put('image_medium', StandardAnalyzer(Version.LUCENE_CURRENT))
-		#analyzerPerField.put('subject_url', StandardAnalyzer(Version.LUCENE_CURRENT))
-		#analyzerPerField.put('subject_id', StandardAnalyzer(Version.LUCENE_CURRENT))
-		#analyzerPerField.put('mobile_url', StandardAnalyzer(Version.LUCENE_CURRENT))
-		#analyzerPerField.put('do_count', StandardAnalyzer(Version.LUCENE_CURRENT))
-		#analyzerPerField.put('seasons_count', StandardAnalyzer(Version.LUCENE_CURRENT))
-		#analyzerPerField.put('schedule_url', StandardAnalyzer(Version.LUCENE_CURRENT))
-		#analyzerPerField.put('episodes_count', StandardAnalyzer(Version.LUCENE_CURRENT))
-		#analyzerPerField.put('current_season', new KeywordAnalyzer(Version.LUCENE_CURRENT))
-		#analyzerPerField.put('collect_count', new KeywordAnalyzer(Version.LUCENE_CURRENT))
-		#analyzerPerField.put('comments_count', StandardAnalyzer(Version.LUCENE_CURRENT))
-		#analyzerPerField.put('ratings_count', StandardAnalyzer(Version.LUCENE_CURRENT))
+        #analyzerPerField.put('douban_site', StandardAnalyzer(Version.LUCENE_CURRENT))注释起来的都是没必要分析的
+        #analyzerPerField.put('image_small', StandardAnalyzer(Version.LUCENE_CURRENT))
+        #analyzerPerField.put('image_large', StandardAnalyzer(Version.LUCENE_CURRENT))
+        #analyzerPerField.put('image_medium', StandardAnalyzer(Version.LUCENE_CURRENT))
+        #analyzerPerField.put('subject_url', StandardAnalyzer(Version.LUCENE_CURRENT))
+        #analyzerPerField.put('subject_id', StandardAnalyzer(Version.LUCENE_CURRENT))
+        #analyzerPerField.put('mobile_url', StandardAnalyzer(Version.LUCENE_CURRENT))
+        #analyzerPerField.put('do_count', StandardAnalyzer(Version.LUCENE_CURRENT))
+        #analyzerPerField.put('seasons_count', StandardAnalyzer(Version.LUCENE_CURRENT))
+        #analyzerPerField.put('schedule_url', StandardAnalyzer(Version.LUCENE_CURRENT))
+        #analyzerPerField.put('episodes_count', StandardAnalyzer(Version.LUCENE_CURRENT))
+        #analyzerPerField.put('current_season', new KeywordAnalyzer(Version.LUCENE_CURRENT))
+        #analyzerPerField.put('collect_count', new KeywordAnalyzer(Version.LUCENE_CURRENT))
+        #analyzerPerField.put('comments_count', StandardAnalyzer(Version.LUCENE_CURRENT))
+        #analyzerPerField.put('ratings_count', StandardAnalyzer(Version.LUCENE_CURRENT))
 
-		aWapper = PerFieldAnalyzerWrapper(SmartChineseAnalyzer(Version.LUCENE_CURRENT),analyzerPerField)
+        aWapper = PerFieldAnalyzerWrapper(SmartChineseAnalyzer(Version.LUCENE_CURRENT),analyzerPerField)
 
-		return aWapper
+        return aWapper
 
 class IndexMySql(object):
     """Usage: python IndexFiles.py"""
@@ -115,7 +117,9 @@ class IndexMySql(object):
 
         store = SimpleFSDirectory(File(storeDir))
         aWrapper = LimitTokenCountAnalyzer(aWrapper, 1048576)
+        bm25Sim = BM25Similarity() #BM25 with these default values: k1 = 1.2, b = 0.75.
         config = IndexWriterConfig(Version.LUCENE_CURRENT, aWrapper)
+        config.setSimilarity(bm25Sim)
         config.setOpenMode(IndexWriterConfig.OpenMode.CREATE)
         writer = IndexWriter(store, config)
 
@@ -161,8 +165,6 @@ class IndexMySql(object):
         t3.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS)
 
         with con:
-            cur = con.cursor()
-
             # Careful with codecs
             con.set_character_set('utf8')
 
@@ -206,6 +208,29 @@ class IndexMySql(object):
                 doc.add(Field("genres",    row[GENRES].replace('..',' '),    t3))
                 doc.add(Field("subtype",   row[SUBTYPE].replace('..',' '),   t2))
                 doc.add(Field("directors", row[DIRECTORS].replace('..',' '), t3))
+
+                user_tags_str = ''
+                others_like_str = ''
+                '''
+                print 'user_tags'+row[USER_TAGS]
+                print 'others_like'+row[OTHERS_LIKE]
+                
+                if row[USER_TAGS]!='':
+                    for tag_pair in row[USER_TAGS].split('..'):
+                        if tag_pair!='':#字符串的最后一个字符是:，这样split之后最后一个元素是空字符
+                            user_tags_str = user_tags_str +' '+tag_pair.split(':')[0]
+                if row[OTHERS_LIKE]!='':
+                    for like_pair in row[OTHERS_LIKE].split('..'):
+                        if like_pair!='':
+                            others_like_str = others_like_str +' '+like_pair.split(':')[1]
+                '''
+
+                print user_tags_str
+                print others_like_str
+
+
+                doc.add(Field("user_tags", user_tags_str, t3))
+                doc.add(Field("others_like", others_like_str, t3))
 
                 #fields which should be analyzed with good analyzer
                 doc.add(Field("title", row[TITLE], t3))                

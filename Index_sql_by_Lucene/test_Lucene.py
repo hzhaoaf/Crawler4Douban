@@ -4,6 +4,7 @@ import time
 import urllib2
 import urllib
 from urllib2 import URLError,HTTPError
+import json
 
 #user agent 
 opener = urllib2.build_opener()
@@ -96,14 +97,19 @@ with open('./testLog.md','w') as logfile:
 		command_str_quoted = command_arr[0]+'='+urllib.quote(command_arr[1])
 		
 		url = base_url+'?'+command_str_quoted+'&'+num_str
-		time.sleep(2)
+		time.sleep(1)
 
 		print url
 		try:
 			rspn = urllib2.urlopen(url)
 			rspn_content = rspn.read()
-			print rspn_content
-			logfile.write('####'+command_str+'####'+'\n\t'+'Content:'+rspn_content+'\n\n'+'---'+'\n')
+			jsonObj = json.loads(rspn_content)
+			titles_Str = '\t'
+			for subj in jsonObj['subjects']:
+				title = subj['title'].encode('UTF-8') #这里得到的居然是unicode编码的!!!!!!!!!1
+				titles_Str = titles_Str + title + '\n\t'
+			print titles_Str
+			logfile.write('####'+command_str+'####'+'\n'+'Content:'+'\n\n'+titles_Str+'\n\n'+'---'+'\n')
 		except URLError,e:
 			logfile.write('####'+command_str+'####'+'\n\t'+'URLError:'+str(e.code)+'\n\n'+'---'+'\n')
 		except HTTPError,e:

@@ -109,7 +109,7 @@ def run(command,searcher, aWrapper):
         tmpDict = {
         'subject_id':doc.get('subject_id'),
         'title':doc.get('title'),
-        'directories':doc.get('directors'),
+        'directors':doc.get('directors'),
         'summary':doc.get('summary'),
         'image_small':doc.get('image_small')}
         retList.append(tmpDict)

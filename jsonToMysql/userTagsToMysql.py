@@ -158,6 +158,7 @@ def getSeperateFieldFromJson(jsonFileName, jsonString):
         jsonKeys = jsonString.keys()
 
         insertDict = {}
+        insertList = []
         userTagsString = ''
 
         for jsonKey in jsonKeys:
@@ -165,12 +166,15 @@ def getSeperateFieldFromJson(jsonFileName, jsonString):
             if hasattr(fieldValue, 'keys'):
                 subKeys = fieldValue.keys()
                 for subKey in subKeys:
-                    userTagsString += subKey + ':' + fieldValue[subKey] + '..'
+                    #userTagsString += subKey + '<>' + fieldValue[subKey] + u'￥'
+                    insertList.append(subkey + '<>' + fieldValue[subkey])
                     insertDict[subKey] = fieldValue[subKey]
             else:
-                userTagsString += jsonKey + ':' + fieldValue + '..'
+                #userTagsString += jsonKey + '<>' + fieldValue + u'￥'
+                insertList.append(jsonKey + '<>' + fieldValue)
                 insertDict[jsonKey] = fieldValue
 
+        userTagsString = u'￥'.join(insertList).encode('utf-8').strip()
 
         insertTuple = (userTagsString,movie_subject_id)
 

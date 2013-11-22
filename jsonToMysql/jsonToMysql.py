@@ -144,8 +144,8 @@ create_movie_items_table = "CREATE TABLE IF NOT EXISTS \
                     directors VARCHAR(1000), \
                     comments_count INT, \
                     ratings_count INT, \
-                    aka VARCHAR(50) \
-                    user_tags VARCHAR(500) \
+                    aka VARCHAR(50), \
+                    user_tags VARCHAR(500), \
                     others_like VARCHAR(1000) \
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci; \
                     "
@@ -468,9 +468,9 @@ def getSeperateFieldFromJson(jsonString):
         #insertDict['casts'] = str(insertDict['casts'])
         #insertDict['directors'] = str(insertDict['directors'])
         #insertDict['summary'] = ''
-        insertDict['genres'] = '..'.join(insertDict['genres'])
-        insertDict['countries'] = '.. '.join(insertDict['countries'])
-        insertDict['aka'] = '..'.join(insertDict['aka'])
+        insertDict['genres'] = u'￥'.join(insertDict['genres']).encode('utf-8').strip()
+        insertDict['countries'] = u'￥'.join(insertDict['countries']).encode('utf-8').strip()
+        insertDict['aka'] = u'￥'.join(insertDict['aka']).encode('utf-8').strip()
         insertDict['user_tags'] = ''
         insertDict['others_like'] = ''
 
@@ -508,10 +508,12 @@ def getSeperateFieldFromJson(jsonString):
         print insertDict['aka']
         '''
 
+        directorsList = []
         directorsString = ''
         #print type(insertDict['directors'])
         #print insertDict['directors']
         #print len(insertDict['directors'])
+        '''
         for director in insertDict['directors']:
             #print director
             for directorsKey in director.keys():
@@ -525,16 +527,27 @@ def getSeperateFieldFromJson(jsonString):
                         #print directorSubKey
                         if directorsField[directorSubKey] == None:
                             directorsField[directorSubKey] = 'None'
-                        directorsString += ' '
+                        directorsString += '<>'
                         directorsString += directorsField[directorSubKey]
                 else:
-                    directorsString += '..'
+                    directorsString += u'￥'
                     directorsString += directorsField
+        '''
+        for director in insertDict['directors']:
+            if director['name'] == None:
+                director['name'] = 'None'
+            #directorsString += u'￥'
+            #directorsString += director['name']
+            directorsList.append(director['name'])
 
+        directorsString = u'￥'.join(directorsList).encode('utf-8').strip()
+
+        castsList = []
         castsString = ''
         #print type(insertDict['casts'])
         #print insertDict['casts']
         #print len(insertDict['casts'])
+        '''
         for cast in insertDict['casts']:
             #print cast
             for castsKey in cast.keys():
@@ -548,11 +561,20 @@ def getSeperateFieldFromJson(jsonString):
                         #print castSubKey
                         if castsField[castSubKey] == None:
                             castsField[castSubKey] = 'None'
-                        castsString += ' '
+                        castsString += '<>'
                         castsString += castsField[castSubKey]
                 else:
-                    castsString += '..'
+                    castsString += u'￥'
                     castsString += castsField
+        '''
+        for cast in insertDict['casts']:
+            if cast['name'] == None:
+                cast['name'] = 'None'
+            #castsString += u'￥'
+            #castsString += cast['name']
+            castsList.append(cast['name'])
+
+        castsString = u'￥'.join(castsList).encode('utf-8').strip()
 
 
         #print directorsString

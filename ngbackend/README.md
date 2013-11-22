@@ -44,3 +44,7 @@ All left to you is to config your URL router and implement your views, also chee
 **Note:**
 
 Please refer to the official guide since I got very confused when I try to refer to some blogs, basically due to they are using **OLD** Django and **deprecated** mod_python. Trust me, it's worth your time!
+
+**Kindly Hint:**
+
+Our backend has moved to a new repository called [MovieSearchService](https://github.com/PhoenixZhao/MovieSearchService).

@@ -14,11 +14,14 @@ from org.apache.lucene.queryparser.classic import MultiFieldQueryParser
 from org.apache.lucene.index import DirectoryReader
 from org.apache.lucene.queryparser.classic import QueryParser
 from org.apache.lucene.store import SimpleFSDirectory
-from org.apache.lucene.search import IndexSearcher
+from org.apache.lucene.search import IndexSearcher ,SortField ,Sort
 from org.apache.lucene.util import Version
 from org.apache.lucene.search import BooleanClause
 
+from org.apache.lucene.search.similarities import BM25Similarity
+
 import json
+import operator
 from sqlConstants import *
 
 #what need to do 
@@ -43,6 +46,8 @@ def config():
     base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
     directory = SimpleFSDirectory(File(os.path.join(base_dir, INDEX_DIR)))
     searcher = IndexSearcher(DirectoryReader.open(directory))
+    bm25Sim = BM25Similarity(2.0,0.75) #BM25 with these default values: k1 = 1.2, b = 0.75.
+    searcher.setSimilarity(bm25Sim)
     analyzer = SmartChineseAnalyzer(Version.LUCENE_CURRENT)
     return searcher,analyzer
 
@@ -79,6 +84,10 @@ def run(command,searcher, aWrapper):
     parser = QueryParser(Version.LUCENE_CURRENT, "title", aWrapper) 
     query = parser.parse(command)
 
+
+    #所有有相关度的doc，进行排序
+    #sortField = SortField('boost',SortField.Type.FLOAT,True) #True表示降序
+    #sort = Sort(sortField)
     '''
     Error with:
     > query = lucene.MultiFieldQueryParser(lucene.Version.LUCENE_CURRENT,
@@ -97,6 +106,8 @@ def run(command,searcher, aWrapper):
     #query = MultiFieldQueryParser.parse(command_list,['subject_id','summary'],occ,analyzer)
 
     #query = QueryParser(Version.LUCENE_CURRENT, FIELD,analyzer).parse(command)
+
+    #scoreDocs = searcher.search(query, 50,sort).scoreDocs
     scoreDocs = searcher.search(query, 50).scoreDocs
     #print "%s total matching documents." % len(scoreDocs)
 
@@ -109,20 +120,25 @@ def run(command,searcher, aWrapper):
         tmpDict = {
         'subject_id':doc.get('subject_id'),
         'title':doc.get('title'),
-        'directories':doc.get('directors'),
+        'directors':doc.get('directors'),
         'summary':doc.get('summary'),
-        'image_small':doc.get('image_small')}
+        'image_small':doc.get('image_small'),
+        'boost':doc.get('boost')}
         retList.append(tmpDict)
+    del searcher
 
+    #人工排序
+    #retList = sorted(retList, key=operator.itemgetter('boost'), reverse=True)  
 
     return retList
 
 
-    del searcher
-
-
-
-
+def printResult(retList):
+    #usage: for the testing
+    # unicode !
+    #print retList[0]['title'].encode('utf-8')
+    for each in retList:
+        print each['subject_id'] + ':' +each['title'] + '-->'+ str(each['boost'])
 
 if __name__ == '__main__':
     lucene.initVM(vmargs=['-Djava.awt.headless=true'])
@@ -131,5 +147,7 @@ if __name__ == '__main__':
     directory = SimpleFSDirectory(File(os.path.join(base_dir, INDEX_DIR)))
     searcher = IndexSearcher(DirectoryReader.open(directory))
     analyzer = SmartChineseAnalyzer(Version.LUCENE_CURRENT)
-    run(searcher, analyzer)
+    command = sys.argv[1]
+    retList = run(command,searcher, analyzer)
+    printResult(retList)
     del searcher

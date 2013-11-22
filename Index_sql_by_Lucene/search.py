@@ -6,7 +6,7 @@ from django.utils import simplejson
 from django.utils.http import urlquote
 import urllib
 
-import SearchMysql_v0
+import SearchMysql_v3 as SearchMysql
 import IndexMysql
 '''
 Interface for querying from App
@@ -15,7 +15,7 @@ Return JSON
 '''
 
 
-SearchMysql_v0.initJvm()
+SearchMysql.initJvm()
 
 
 def search(request):
@@ -34,8 +34,8 @@ def search(request):
 
         
         aWrapper = IndexMysql.CreateAWrapper()
-        searcher,analyzer = SearchMysql_v0.config()
-        retList = SearchMysql_v0.run(command,searcher,aWrapper)
+        searcher,analyzer = SearchMysql.config()
+        retList = SearchMysql.run(command,searcher,aWrapper)
 
         ansCount = len(retList)
 

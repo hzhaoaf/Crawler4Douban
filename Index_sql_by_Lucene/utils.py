@@ -72,6 +72,7 @@ def getMax():
 
 			maxDict = {}
 			maxDict['ratings_c_max'] = 0
+
 			maxDict['do_c_max'] = 0
 			maxDict['collect_c_max']=0
 			maxDict['wish_c_max'] =0
@@ -79,6 +80,7 @@ def getMax():
 			maxDict['reviews_c_max'] =0
 			maxDict['dcw_max'] =0
 			maxDict['tr_max'] =0
+			maxDict['prob_max'] = 0
 
 			ratings_c_max = 0
 			do_c_max = 0
@@ -88,6 +90,7 @@ def getMax():
 			reviews_c_max = 0
 			dcw_max =0
 			tr_max = 0
+			prob_max = 0
 
 
 			numrows = int(cur.rowcount)
@@ -101,8 +104,11 @@ def getMax():
 				tmp_wc = int(row[WISH_COUNT])     if row[WISH_COUNT] is not None else 0
 				tmp_cmc= int(row[COMMENTS_COUNT])     if row[COMMENTS_COUNT] is not None else 0
 				tmp_rec= int(row[REVIEWS_COUNT])     if row[REVIEWS_COUNT] is not None else 0
+
 				tmp_dcw = tmp_dc+tmp_cc + tmp_wc
 				tmp_tr  = float(tmp_wc)/(tmp_cc+tmp_dc) if tmp_dc and tmp_cc ==0 else 0
+
+				#tmp_prob = 0.4*(tmp_rv)*0.3/10) + 0.4* + 0.15*popularity + 0.05*trends
 
 
 				ratings_c_max  = tmp_rc  if tmp_rc>ratings_c_max else ratings_c_max
@@ -179,8 +185,9 @@ def calcBoostProb(doc_row,maxDict):
 	rating_total = f_tu(rating_total)
 	impressive = f_tu(impressive)
 
+
 	#it is a measure of whether a movie should be addBoost, =1 means it is a  totally good movie which should be boosted
-	boostProb = 0.6*f(rating_total) + 0.2*f(impressive) + 0.15*popularity + 0.05*trends
+	boostProb = 0.4*(float(rating_av)*0.3/10) + 0.4*impressive + 0.15*popularity + 0.05*trends
 
 	#print rating_total, impressive, popularity, trends
 	return boostProb

@@ -14,13 +14,14 @@ from org.apache.lucene.queryparser.classic import MultiFieldQueryParser
 from org.apache.lucene.index import DirectoryReader
 from org.apache.lucene.queryparser.classic import QueryParser
 from org.apache.lucene.store import SimpleFSDirectory
-from org.apache.lucene.search import IndexSearcher
+from org.apache.lucene.search import IndexSearcher ,SortField ,Sort
 from org.apache.lucene.util import Version
 from org.apache.lucene.search import BooleanClause
 
 from org.apache.lucene.search.similarities import BM25Similarity
 
 import json
+import operator
 from sqlConstants import *
 
 #what need to do 
@@ -83,6 +84,10 @@ def run(command,searcher, aWrapper):
     parser = QueryParser(Version.LUCENE_CURRENT, "title", aWrapper) 
     query = parser.parse(command)
 
+
+    #所有有相关度的doc，进行排序
+    #sortField = SortField('boost',SortField.Type.FLOAT,True) #True表示降序
+    #sort = Sort(sortField)
     '''
     Error with:
     > query = lucene.MultiFieldQueryParser(lucene.Version.LUCENE_CURRENT,
@@ -101,6 +106,8 @@ def run(command,searcher, aWrapper):
     #query = MultiFieldQueryParser.parse(command_list,['subject_id','summary'],occ,analyzer)
 
     #query = QueryParser(Version.LUCENE_CURRENT, FIELD,analyzer).parse(command)
+
+    #scoreDocs = searcher.search(query, 50,sort).scoreDocs
     scoreDocs = searcher.search(query, 50).scoreDocs
     #print "%s total matching documents." % len(scoreDocs)
 
@@ -118,19 +125,20 @@ def run(command,searcher, aWrapper):
         'image_small':doc.get('image_small'),
         'boost':doc.get('boost')}
         retList.append(tmpDict)
+    del searcher
 
+    #人工排序
+    #retList = sorted(retList, key=operator.itemgetter('boost'), reverse=True)  
+
+    return retList
+
+
+def printResult(retList):
+    #usage: for the testing
     # unicode !
     #print retList[0]['title'].encode('utf-8')
     for each in retList:
         print each['subject_id'] + ':' +each['title'] + '-->'+ str(each['boost'])
-    del searcher
-    return retList
-
-
-
-
-
-
 
 if __name__ == '__main__':
     lucene.initVM(vmargs=['-Djava.awt.headless=true'])
@@ -140,5 +148,6 @@ if __name__ == '__main__':
     searcher = IndexSearcher(DirectoryReader.open(directory))
     analyzer = SmartChineseAnalyzer(Version.LUCENE_CURRENT)
     command = sys.argv[1]
-    run(command,searcher, analyzer)
+    retList = run(command,searcher, analyzer)
+    printResult(retList)
     del searcher

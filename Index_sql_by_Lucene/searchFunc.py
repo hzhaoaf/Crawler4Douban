@@ -3,7 +3,7 @@
 
 #usage:for test 
 
-import SearchMysql_v0
+import SearchMysql_v2
 
 SearchMysql_v0.initJvm()
 searcher,analyzer = SearchMysql_v0.config()

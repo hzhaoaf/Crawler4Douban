@@ -28,6 +28,7 @@ import MySQLdb as mdb
 
 
 from sqlConstants import *
+import utils
 
 #what need to do 
 #step 1. change config below
@@ -117,7 +118,7 @@ class IndexMySql(object):
 
         store = SimpleFSDirectory(File(storeDir))
         aWrapper = LimitTokenCountAnalyzer(aWrapper, 1048576)
-        bm25Sim = BM25Similarity() #BM25 with these default values: k1 = 1.2, b = 0.75.
+        bm25Sim = BM25Similarity(2.0,0.75) #BM25 with these default values: k1 = 1.2, b = 0.75.
         config = IndexWriterConfig(Version.LUCENE_CURRENT, aWrapper)
         config.setSimilarity(bm25Sim)
         config.setOpenMode(IndexWriterConfig.OpenMode.CREATE)
@@ -140,7 +141,7 @@ class IndexMySql(object):
 
         #define the index of all the fields
         #---------step 2----------
-        con = mdb.connect('localhost','root','testgce','moviedata')
+        con = mdb.connect('localhost','root','testgce','douban_movie_v3')
 
         #t_num = FieldType.NumericType it is wrong!!
         t_num = FieldType()
@@ -163,6 +164,10 @@ class IndexMySql(object):
         t3.setStored(True)
         t3.setTokenized(True)
         t3.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS)
+
+        maxDict = utils.getMax()
+        base = DOC_BOOST_RANGE[0]
+        upper = DOC_BOOST_RANGE[1]
 
         with con:
             # Careful with codecs
@@ -190,53 +195,101 @@ class IndexMySql(object):
                 print 'id'+subject_id
                 #print 'summary'+summary+'end'
 
+                #calc the boost of doc
+                pass
+
+
                 doc = Document()
+
+                #boosting
+                boostProb = utils.calcBoostProb(row,maxDict)
+                boost = base + boostProb*(upper-base)
+
+                doc.add(FloatField("boost",boost,Field.Store.YES))
+
                 #fields which should not be analyzed
                 doc.add(FloatField("rating_average",float(row[RATING_AVERAGE]),Field.Store.NO))
                 doc.add(FloatField("rating_stars", float(row[RATING_STARS]), Field.Store.NO))
                 doc.add(IntField("reviews_count", int(row[REVIEWS_COUNT]), Field.Store.NO))
-                #doc.add(FloatField("year", float(row[YEAR]), Field.Store.NO))
+                #doc.add(FloatField("year", float(row[YEAR]), Field.Store.NO).setBoost(boost))
                 doc.add(IntField("collect_count", int(row[COLLECT_COUNT]), Field.Store.NO))
-                doc.add(IntField("subject_id", int(subject_id), Field.Store.YES))
+                doc.add(IntField("subject_id", int(row[SUBJECT_ID]), Field.Store.YES))
                 doc.add(IntField("comments_count", int(row[COMMENTS_COUNT]), Field.Store.NO))
                 doc.add(IntField("ratings_count", int(row[RATINGS_COUNT]), Field.Store.NO))
-                doc.add(Field("image_small", row[IMAGE_SMALL], t1))
+                #doc.add(Field("image_small", row[IMAGE_SMALL], t1),Field.Store.NO))
 
                 #fields which should be analyzed with WhitespaceAnalyzer
-                doc.add(Field("countries", row[COUNTRIES].replace('..',' '), t3))
-                doc.add(Field("casts",     row[CASTS].replace('..',' '),     t3))
-                doc.add(Field("genres",    row[GENRES].replace('..',' '),    t3))
-                doc.add(Field("subtype",   row[SUBTYPE].replace('..',' '),   t2))
-                doc.add(Field("directors", row[DIRECTORS].replace('..',' '), t3))
+                #attention!!! dont use a long sentence like :
+                #doc.add(Field("genres",    row[GENRES].replace(delim,' '),    t3).setBoost(boost))
+                #or you'll get a null pointer error
+                f = Field("countries", row[COUNTRIES].replace(delim,' '), t3)
+                f.setBoost(boost)
+                doc.add(f)
+
+                f = Field("casts",     row[CASTS].replace(delim,' '),     t3)
+                f.setBoost(boost)
+                doc.add(f)
+
+                Field("genres",    row[GENRES].replace(delim,' '),    t3)
+                f.setBoost(boost)
+                doc.add(f)
+
+                Field("subtype",   row[SUBTYPE].replace(delim,' '),   t3)
+                f.setBoost(boost)
+                doc.add(f)
+
+                f = Field("directors", row[DIRECTORS].replace(delim,' '), t3)
+                f.setBoost(boost)
+                doc.add(f)
+
+                #it is wrong cause indexable field has no method setBoost
+                # fieldList = doc.getFields()  # is not a python 'list' , but a 'List' which is unindexable                
+                # for eachField in fieldList:
+                #     eachField.setBoost(boost)
+
+
 
                 user_tags_str = ''
                 others_like_str = ''
-                '''
-                print 'user_tags'+row[USER_TAGS]
-                print 'others_like'+row[OTHERS_LIKE]
+                
                 
                 if row[USER_TAGS]!='':
-                    for tag_pair in row[USER_TAGS].split('..'):
+                    for tag_pair in row[USER_TAGS].split(delim):
                         if tag_pair!='':#字符串的最后一个字符是:，这样split之后最后一个元素是空字符
-                            user_tags_str = user_tags_str +' '+tag_pair.split(':')[0]
+                            user_tags_str = user_tags_str +' '+tag_pair.split(delim_uo)[0]
                 if row[OTHERS_LIKE]!='':
-                    for like_pair in row[OTHERS_LIKE].split('..'):
+                    for like_pair in row[OTHERS_LIKE].split(delim):
                         if like_pair!='':
-                            others_like_str = others_like_str +' '+like_pair.split(':')[1]
-                '''
+                            others_like_str = others_like_str +' '+like_pair.split(delim_uo)[1]
 
-                print user_tags_str
-                print others_like_str
+                # print user_tags_str
+                # print others_like_str
 
 
-                doc.add(Field("user_tags", user_tags_str, t3))
-                doc.add(Field("others_like", others_like_str, t3))
+                f = Field("user_tags", user_tags_str, t3)
+                f.setBoost(boost)
+                doc.add(f)
+
+                f = Field("others_like", others_like_str, t3)
+                f.setBoost(boost)
+                doc.add(f)
 
                 #fields which should be analyzed with good analyzer
-                doc.add(Field("title", row[TITLE], t3))                
-                doc.add(Field("original_title", row[ORIGINAL_TITLE], t2))
-                doc.add(Field("summary_segmentation", row[SUMMARY_SEGMENTATION], t2))
-                doc.add(Field("aka", row[AKA], t2))
+                f = Field("title", row[TITLE], t3)                
+                f.setBoost(boost)
+                doc.add(f)
+
+                f = Field("original_title", row[ORIGINAL_TITLE], t3)
+                f.setBoost(boost)
+                doc.add(f)
+
+                f = Field("summary_segmentation", row[SUMMARY_SEGMENTATION], t3)
+                f.setBoost(boost)
+                doc.add(f)
+
+                f = Field("aka", row[AKA], t2)
+                f.setBoost(boost)
+                doc.add(f)
 
                 if len(summary) > 0:
                     print subject_id +'--->'+':\n    '+ row[TITLE]
@@ -244,9 +297,18 @@ class IndexMySql(object):
                         summary_unicoded = unicode(summary, 'utf-8') #test the encoding 
                     except Exception,e:
                         print "Decode Failed: ", e
-                    doc.add(Field('summary', summary, t2))
+                    f = Field('summary', summary, t2)
+                    f.setBoost(boost)
+                    doc.add(f)
                 else:
                     print "warning:\n" + subject_id +'---> No content!'
+                print 'boosting:' + str(boost)
+
+                if boost>upper:
+                    print boostProb
+                    print maxDict
+                    
+                    exit(0)
                 writer.addDocument(doc)
 
 

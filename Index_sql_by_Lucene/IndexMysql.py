@@ -193,7 +193,7 @@ class IndexMySql(object):
 
 
                 print 'id'+subject_id
-                #print 'summary'+summary+'end'
+                utils.formatYear(row[YEAR])                
 
                 #calc the boost of doc
                 pass

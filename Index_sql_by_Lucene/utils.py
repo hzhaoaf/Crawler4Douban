@@ -12,6 +12,110 @@
 import MySQLdb as mdb
 from sqlConstants import *
 from time import sleep
+from datetime import *
+
+
+def formatYear(yearStr):
+	#usage: this function is used for format the 'year' field in sql to the date type in python 
+	# 豆瓣的 year 字段 有几种主要的，还有无数狗屎一样的
+	# 1. 年份 2011
+	# 2. 年月 2011-06
+	# 3  年月日 2011-06-01
+	# 4  无信息 0000
+	# 	1916-1917 1970–1996 	
+	# 	2010年
+	# 	2010|2011 	
+	# 	空
+	#   1995/2011
+	#   02/05/2012
+	wtf = open('wtf.txt','a')
+
+	year = ''
+	month = ''
+	day = ''
+	#try:
+	yearStr = unicode(yearStr,'utf-8')# 转换为unicode 之后才可以被[]索引
+
+
+	if yearStr != '' and yearStr != u'0000'  and yearStr != u'？' and yearStr!=u'?' and yearStr != u'???' and yearStr != u'待定' and yearStr[0:4]!=u'http' and 			yearStr != u'Unknown Da' and yearStr != u'不知道' and yearStr!=u'TV Series ' and yearStr!=u'未知':
+		if len(yearStr)==4:
+			year = yearStr[0:4]
+		else:
+			#print u'-', u'—' ,u'–'
+			#三种横线…… 无语了
+			if len(yearStr)<4: # some bullshit		195
+				year = '0001'
+				#------------------------
+			elif yearStr[4] == u'-' or yearStr[4] == u'—' or yearStr[4] == u'－' or yearStr[4] == u'–' or yearStr[4] == u's' or yearStr[4]==u' ' or yearStr[4]==u'.':
+			#2011-06,2011-06-01,2011-2012,1990s  2011 夏
+				year = yearStr[0:4] #1990s
+				if len(yearStr)<=7:#2011-06 2011-  2011 夏
+					month = yearStr[5:7]
+				else:
+					if yearStr[7] == u'-' or yearStr[7] == u'—' or yearStr[7] == u'－' or yearStr[7] == u'–' or yearStr[7]==u'.': #2011-06-01
+						month = yearStr[5:7]
+						day = yearStr[8:]
+					elif len(yearStr)>5: #2011-2012
+						year = yearStr[5:]
+					else: #1999-
+						year = year[0:4]
+			elif yearStr[4] == u'|' or yearStr[4] == u'/' or yearStr[4] == u','  or yearStr[4] == u',' or yearStr[4] == u'~': ## 有待考证
+				if yearStr[5:] != u'pre' and yearStr[5] != u'(':  #2001-pre 
+					year = yearStr[5:]
+				else:
+					year = yearStr[0:4]
+			elif yearStr[4] == u'年': #1999年
+				year = yearStr[0:4]
+			elif yearStr[4] == u'（' or yearStr[4:5] == ' (': #2001 (usa)
+				year = yearStr[0:4]
+			
+			elif yearStr[4:7] == u' - ' or yearStr[4:7] == u' – ': #2001 - 2002
+				if len(yearStr[7:])>3:  #2001 - pre 1992 – 199
+					year = yearStr[7:]
+				else:
+					year = yearStr[0:4]
+					
+
+			elif yearStr[2] == u'/':#03/03/2001 
+				year = yearStr[-4:]
+				month = yearStr[3:5]
+				day = yearStr[0:2]
+
+			elif yearStr[0:2] == u'TV':# Tv 2001
+				year = yearStr[-4:]
+
+			else:
+				year = '0001'
+
+
+
+
+	else:
+		year = '0001'
+		month = '01'
+		day = '01'
+
+	#-----------------------
+	#except:
+	#	wtf.write('**!!! :' + yearStr.encode('utf-8')+'\n')
+
+
+	if year == '':
+		print yearStr
+		
+		wtf.write('--!!!:' + yearStr.encode('utf-8')+'\n')
+
+	year = '0001' if year == '' else year
+	month = '01' if month == '' else month
+	day = '01' if day == '' else day
+	mDateStr = year+'-'+month+'-'+day
+	return mDateStr
+
+		
+
+	# mDateStr = year+'-01-01'
+	# mDate = date(int(year),1,1)
+
 
 
 

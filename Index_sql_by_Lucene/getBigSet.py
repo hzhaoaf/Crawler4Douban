@@ -16,7 +16,7 @@ def printDict(dic,f):
                 try:
                     eachVal.decode('utf-8') #test the encoding
                 except Exception,e:
-                    print "cant decode " + eachVal
+                    print "cant decode" + eachVal
                     #eachVal = eachVal.encode('utf-8')
                 try:
                     f.write(eachVal+'\n')

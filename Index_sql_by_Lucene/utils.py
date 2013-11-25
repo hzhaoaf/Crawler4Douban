@@ -37,22 +37,25 @@ def formatYear(yearStr):
 	yearStr = unicode(yearStr,'utf-8')# 转换为unicode 之后才可以被[]索引
 
 
-	if yearStr != '' and yearStr != u'0000'  and yearStr != u'？' and yearStr!=u'?' and yearStr != u'???' and yearStr != u'待定' and yearStr[0:4]!=u'http' and 			yearStr != u'Unknown Da' and yearStr != u'不知道' and yearStr!=u'TV Series ' and yearStr!=u'未知':
+	if yearStr != '' and yearStr != u'0000'  and yearStr != u'？'  and yearStr!=u'?' and yearStr != u'???' and yearStr != u'待定' and yearStr[0:4]!=u'http' and yearStr!=u'????' and	yearStr != u'Unknown Da' and yearStr != u'不知道' and yearStr!=u'TV Series ' and yearStr!=u'未知':
 		if len(yearStr)==4:
-			year = yearStr[0:4]
+			if yearStr[2] == unicode('年','utf-8') and yearStr[3] == unicode('代','utf-8'): #80年代
+				year = '19'+yearStr[0:2]
+			else:
+				year = yearStr[0:4]
 		else:
 			#print u'-', u'—' ,u'–'
 			#三种横线…… 无语了
 			if len(yearStr)<4: # some bullshit		195
 				year = '0001'
 				#------------------------
-			elif yearStr[4] == u'-' or yearStr[4] == u'—' or yearStr[4] == u'－' or yearStr[4] == u'–' or yearStr[4] == u's' or yearStr[4]==u' ' or yearStr[4]==u'.':
+			elif yearStr[4] == u'-' or yearStr[4] == u'—' or yearStr[4]==u'-' or yearStr[4] == u'－' or yearStr[4] == u'–' or yearStr[4] == u's' or yearStr[4]==u' ' or yearStr[4]==u'.':
 			#2011-06,2011-06-01,2011-2012,1990s  2011 夏
 				year = yearStr[0:4] #1990s
 				if len(yearStr)<=7:#2011-06 2011-  2011 夏
 					month = yearStr[5:7]
 				else:
-					if yearStr[7] == u'-' or yearStr[7] == u'—' or yearStr[7] == u'－' or yearStr[7] == u'–' or yearStr[7]==u'.': #2011-06-01
+					if yearStr[7] == u'-' or  yearStr[7] == u'—' or yearStr[7] == u'－' or yearStr[7] == u'–' or yearStr[7]==u'.': #2011-06-01
 						month = yearStr[5:7]
 						day = yearStr[8:]
 					elif len(yearStr)>5: #2011-2012
@@ -64,7 +67,7 @@ def formatYear(yearStr):
 					year = yearStr[5:]
 				else:
 					year = yearStr[0:4]
-			elif yearStr[4] == u'年': #1999年
+			elif yearStr[4] == unicode('年','utf-8'): #1999年
 				year = yearStr[0:4]
 			elif yearStr[4] == u'（' or yearStr[4:5] == ' (': #2001 (usa)
 				year = yearStr[0:4]
@@ -95,21 +98,31 @@ def formatYear(yearStr):
 		month = '01'
 		day = '01'
 
-	#-----------------------
-	#except:
-	#	wtf.write('**!!! :' + yearStr.encode('utf-8')+'\n')
-
-
-	if year == '':
-		print yearStr
-		
-		wtf.write('--!!!:' + yearStr.encode('utf-8')+'\n')
-
+	year = year.replace('?','0')
 	year = '0001' if year == '' else year
-	month = '01' if month == '' else month
+ 	month = '01' if month == '' else month
 	day = '01' if day == '' else day
-	mDateStr = year+'-'+month+'-'+day
-	return mDateStr
+
+	#-一位的数字 比如 1999-1-2 貌似不能在lucene的datatools中解析
+	month = u'0'+month if len(month)==1 else month 
+	day = u'0'+day if len(day)==1 else day
+
+	mDateStr = year+u'-'+month+u'-'+day
+
+	#最后一次检查几个个别的例子	
+	if mDateStr == u'2011-0夏-01':
+		mDateStr = u'2011-06-01'
+	if mDateStr == u'2001-现在-01':
+		mDateStr = u'2010-01-01'
+	if mDateStr == u'1982 -01-01':
+		mDateStr = u'1982-01-01'	
+	if mDateStr == u'1991-12-4':
+		mDateStr = u'1991-12-04'
+
+		
+
+	mDateStr = mDateStr.encode('utf-8')
+	return mDateStr   
 
 		
 

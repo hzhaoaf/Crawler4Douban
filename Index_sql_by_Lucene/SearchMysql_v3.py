@@ -4,7 +4,7 @@
 
 import sys, os, lucene
 
-from java.io import File
+from java.io import File,StringReader
 from lucene import JArray
 #from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.analysis.cn.smart import SmartChineseAnalyzer
@@ -23,6 +23,13 @@ from org.apache.lucene.search.similarities import BM25Similarity
 import json
 import operator
 from sqlConstants import *
+#import IndexMysql
+
+from org.apache.lucene.analysis import TokenStream
+from org.apache.lucene.analysis.tokenattributes import \
+    OffsetAttribute, CharTermAttribute, TypeAttribute, \
+    PositionIncrementAttribute
+
 
 #what need to do 
 #step 1. change config below
@@ -51,6 +58,19 @@ def config():
     analyzer = SmartChineseAnalyzer(Version.LUCENE_CURRENT)
     return searcher,analyzer
 
+def printTokens(analyzer,command,field):
+    #usage: print the tokens 
+    #tokenStream
+    tokenStream =   analyzer.tokenStream(field, StringReader(command))
+    charTermAtr = tokenStream.addAttribute(CharTermAttribute.class_)
+    tokenStream.reset()
+    while (tokenStream.incrementToken()):
+        print charTermAtr.toString()
+    tokenStream.close()
+
+def printWrappedAnalyzer(aWrapper):
+    print aWrapper.toString()
+
 
 #---end config---
 
@@ -60,14 +80,7 @@ def run(command,searcher, aWrapper):
 
     if command == '':
         return
-
-    print
-
     
-    
-    
-
-
     #debug
     #print "Searching for:"+command
 
@@ -80,10 +93,14 @@ def run(command,searcher, aWrapper):
     #parser = MultiFieldQueryParser(Version.LUCENE_CURRENT, JArray('string')(['subject_id','summary']),analyzer)
     #query = MultiFieldQueryParser.parse(parser, command_jarr)
 
-    #创建QueryParser对象 默认的搜索域为content 
+    #创建QueryParser对象 默认的搜索域为title 
     parser = QueryParser(Version.LUCENE_CURRENT, "title", aWrapper) 
+    #A PerFieldAnalyzerWrapper can be used like any other analyzer, for both indexing and query parsing. 
     query = parser.parse(command)
 
+    #test the analyzerWrapper
+    #printTokens(aWrapper,command,'title')
+    #printWrappedAnalyzer(aWrapper)
 
     #所有有相关度的doc，进行排序
     #sortField = SortField('boost',SortField.Type.FLOAT,True) #True表示降序
@@ -109,11 +126,12 @@ def run(command,searcher, aWrapper):
 
     #scoreDocs = searcher.search(query, 50,sort).scoreDocs
     scoreDocs = searcher.search(query, 50).scoreDocs
-    #print "%s total matching documents." % len(scoreDocs)
+
 
     retList = []
     for scoreDoc in scoreDocs:
         doc = searcher.doc(scoreDoc.doc)
+        score = scoreDoc.score
         #print 'subject_id:', doc.get('subject_id')
         #print 'title:', doc.get('title')
 
@@ -123,7 +141,11 @@ def run(command,searcher, aWrapper):
         'directors':doc.get('directors'),
         'summary':doc.get('summary'),
         'image_small':doc.get('image_small'),
-        'boost':doc.get('boost')}
+        'boost':doc.get('boost'),
+        'user_tags':doc.get('user_tags'),
+        'year':doc.get('year'),
+        'score':score
+        }
         retList.append(tmpDict)
     del searcher
 
@@ -138,7 +160,7 @@ def printResult(retList):
     # unicode !
     #print retList[0]['title'].encode('utf-8')
     for each in retList:
-        print each['subject_id'] + ':' +each['title'] + '-->'+ str(each['boost'])
+        print each['subject_id'] + ':' +each['title'] + '-->'+ str(each['boost']+' @:'+str(each['score']))
 
 if __name__ == '__main__':
     lucene.initVM(vmargs=['-Djava.awt.headless=true'])
@@ -146,8 +168,8 @@ if __name__ == '__main__':
     base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
     directory = SimpleFSDirectory(File(os.path.join(base_dir, INDEX_DIR)))
     searcher = IndexSearcher(DirectoryReader.open(directory))
-    analyzer = SmartChineseAnalyzer(Version.LUCENE_CURRENT)
     command = sys.argv[1]
-    retList = run(command,searcher, analyzer)
+    aWrapper = IndexMysql.CreateAWrapper()
+    retList = run(command,searcher, aWrapper)
     printResult(retList)
     del searcher

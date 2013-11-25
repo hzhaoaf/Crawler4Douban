@@ -84,6 +84,8 @@ delim = '￥' #genres casts aka user_tag others_like countries
 delim_uo = '<>'
 
 
+TAGS_NUM = 20
+
 #表示对doc的加权范围
 DOC_BOOST_RANGE = [1,10]
 

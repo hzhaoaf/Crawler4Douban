@@ -16,11 +16,12 @@ from org.apache.lucene.analysis.miscellaneous import LimitTokenCountAnalyzer
 from org.apache.lucene.analysis.cn.smart import SmartChineseAnalyzer
 from org.apache.lucene.analysis.standard import StandardAnalyzer
 from org.apache.lucene.analysis.core import WhitespaceAnalyzer
-from org.apache.lucene.document import Document, Field, FieldType, FloatField,IntField
+from org.apache.lucene.document import Document, Field, FieldType, FloatField,IntField,StringField
 from org.apache.lucene.index import FieldInfo, IndexWriter, IndexWriterConfig
 from org.apache.lucene.store import SimpleFSDirectory
 from org.apache.lucene.util import Version
 from org.apache.lucene.search.similarities import BM25Similarity
+from org.apache.lucene.document import DateTools
 
 from org.apache.lucene.analysis.miscellaneous import PerFieldAnalyzerWrapper
 
@@ -74,7 +75,7 @@ def CreateAWrapper():
         analyzerPerField.put('wish_count', StandardAnalyzer(Version.LUCENE_CURRENT))
         analyzerPerField.put('year', StandardAnalyzer(Version.LUCENE_CURRENT))
 
-        analyzerPerField.put('title', SmartChineseAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('title', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
         analyzerPerField.put('original_title', SmartChineseAnalyzer(Version.LUCENE_CURRENT))
         analyzerPerField.put('summary', SmartChineseAnalyzer(Version.LUCENE_CURRENT))
         analyzerPerField.put('aka', SmartChineseAnalyzer(Version.LUCENE_CURRENT))
@@ -141,7 +142,7 @@ class IndexMySql(object):
 
         #define the index of all the fields
         #---------step 2----------
-        con = mdb.connect('localhost','root','testgce','moviedata')
+        con = mdb.connect('localhost','root','testgce','douban_movie_v3')
 
         #t_num = FieldType.NumericType it is wrong!!
         t_num = FieldType()
@@ -193,7 +194,20 @@ class IndexMySql(object):
 
 
                 print 'id'+subject_id
-                utils.formatYear(row[YEAR])                
+                year = utils.formatYear(row[YEAR])
+                print year
+                try:
+                    date = DateTools.stringToDate(year.replace('-',' '))
+                    wtfFile = open('wtf.txt','a')
+                    dateStr  = DateTools.dateToString(date,DateTools.Resolution.DAY)
+                except:
+                    #try:
+                    wtfFile.write(year+'\n')
+                    #except:
+                    #    wtfFile.write('*************'+'\n')
+                        
+
+
 
                 #calc the boost of doc
                 pass
@@ -206,6 +220,8 @@ class IndexMySql(object):
                 boost = base + boostProb*(upper-base)
 
                 doc.add(FloatField("boost",boost,Field.Store.YES))
+                doc.add(StringField("year",dateStr,Field.Store.YES))
+                #A text field is a sequence of terms that has been tokenized while a string field is a single term (although it can also be multivalued.)
 
                 #fields which should not be analyzed
                 doc.add(FloatField("rating_average",float(row[RATING_AVERAGE]),Field.Store.NO))
@@ -254,8 +270,12 @@ class IndexMySql(object):
                 
                 
                 if row[USER_TAGS]!='':
-                    for tag_pair in row[USER_TAGS].split(delim):
-                        if tag_pair!='':#字符串的最后一个字符是:，这样split之后最后一个元素是空字符
+                    user_tags_list = row[USER_TAGS].split(delim) 
+                    #填充tags，目测3是平均长度
+                    while len(user_tags_list)<20:
+                        user_tags_list.append('￥￥￥<>0')
+                    for tag_pair in user_tags_list:
+                        if tag_pair!='':#字符串的最后一个字符是￥，这样split之后最后一个元素是空字符
                             user_tags_str = user_tags_str +' '+tag_pair.split(delim_uo)[0]
                 if row[OTHERS_LIKE]!='':
                     for like_pair in row[OTHERS_LIKE].split(delim):

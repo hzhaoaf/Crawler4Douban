@@ -75,7 +75,7 @@ def CreateAWrapper():
         analyzerPerField.put('wish_count', StandardAnalyzer(Version.LUCENE_CURRENT))
         analyzerPerField.put('year', StandardAnalyzer(Version.LUCENE_CURRENT))
 
-        analyzerPerField.put('title', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('title', SmartChineseAnalyzer(Version.LUCENE_CURRENT))
         analyzerPerField.put('original_title', SmartChineseAnalyzer(Version.LUCENE_CURRENT))
         analyzerPerField.put('summary', SmartChineseAnalyzer(Version.LUCENE_CURRENT))
         analyzerPerField.put('aka', SmartChineseAnalyzer(Version.LUCENE_CURRENT))

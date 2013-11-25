@@ -23,7 +23,6 @@ from org.apache.lucene.search.similarities import BM25Similarity
 import json
 import operator
 from sqlConstants import *
-#import IndexMysql
 
 from org.apache.lucene.analysis import TokenStream
 from org.apache.lucene.analysis.tokenattributes import \
@@ -160,7 +159,7 @@ def printResult(retList):
     # unicode !
     #print retList[0]['title'].encode('utf-8')
     for each in retList:
-        print each['subject_id'] + ':' +each['title'] + '-->'+ str(each['boost']+' @:'+str(each['score']))
+        print each['subject_id'] + ':' +each['title'] + 'boost->'+ str(each['boost']+'|| score:'+str(each['score']))
 
 if __name__ == '__main__':
     lucene.initVM(vmargs=['-Djava.awt.headless=true'])
@@ -169,6 +168,7 @@ if __name__ == '__main__':
     directory = SimpleFSDirectory(File(os.path.join(base_dir, INDEX_DIR)))
     searcher = IndexSearcher(DirectoryReader.open(directory))
     command = sys.argv[1]
+    import IndexMysql
     aWrapper = IndexMysql.CreateAWrapper()
     retList = run(command,searcher, aWrapper)
     printResult(retList)

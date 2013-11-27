@@ -329,3 +329,128 @@ python SearchMysql_v3.py "countries:美 国^5 user_tags:人性"
 可以吧 query在comments中的搜索评分也作为reRank的一个因子
 
 
+
+
+#电影缺失问题
+补充之后要更新maxDict
+
+
+#可以算一下每个因子的分布区间，根据区间来调整系数
+
+
+IndexReader:
+
+	Terms 	getTermVector(int docID, String field)
+	Retrieve term vector for this document and field, or null if term vectors were not indexed.
+
+terms
+
+	abstract TermsEnum 	iterator(TermsEnum reuse)
+	Returns an iterator that will step through all terms.
+
+TermsEnum
+
+	docFreq()
+	Returns the number of documents containing the current term.
+
+	DocsEnum 	docs(Bits liveDocs, DocsEnum reuse)
+	Get DocsEnum for the current term.
+
+<!-- abstract BytesRef 	term()
+Returns current term. -->
+
+DocsEnum:
+
+	abstract int 	freq()
+	Returns term frequency in the current document.
+
+
+MultiFields:
+
+	static DocsEnum 	getTermDocsEnum(IndexReader r, Bits liveDocs, String field, BytesRef term)
+	Returns DocsEnum for the specified field & term.
+
+TermsEnum.docFreq():所有包含当前term的doc数目
+TermsEnum。totalTermFreq： 该term再所有doc中的数目
+
+
+	for (int i = 0; i < Reader.maxDoc(); ++i) {
+	  Terms terms = Reader.getTermVector(i, "body");
+
+		TermsEnum termsEnum = terms.iterator(null);
+		int count = 0;
+	    while (termsEnum.next() != null) {
+			Term t = termsEnum.term();
+			docFreq = TermsEnum.Freq()
+				TermsEnum.docs(Bits liveDocs, DocsEnum reuse)
+				reader, MultiFields.getLiveDocs(reader), "contents", term.bytes()
+
+	        count++;
+	    }
+	}
+
+IndexReader indexReader = DirectoryReader.open(directory);
+
+Bits liveDocs = MultiFields.getLiveDocs(indexReader);
+Fields fields = MultiFields.getFields(indexReader);
+for (String field : fields) {
+
+    TermsEnum termEnum = MultiFields.getTerms(indexReader, field).iterator(null);
+    BytesRef bytesRef;
+    while ((bytesRef = termEnum.next()) != null) {
+        if (termEnum.seekExact(bytesRef, true)) {
+
+            DocsEnum docsEnum = termEnum.docs(liveDocs, null);
+
+            if (docsEnum != null) {
+                int doc;
+                while ((doc = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                    System.out.println(bytesRef.utf8ToString() + " in doc " + doc + ": " + docsEnum.freq());
+                }
+            }
+        }
+    }
+}
+
+for (String field : fields) {
+    TermsEnum termEnum = MultiFields.getTerms(indexReader, field).iterator(null);
+    BytesRef bytesRef;
+    while ((bytesRef = termEnum.next()) != null) {
+        int freq = indexReader.docFreq(new Term(field, bytesRef));
+
+        System.out.println(bytesRef.utf8ToString() + " in " + freq + " documents");
+
+    }
+}
+
+呈献 in doc 23352: 1
+呈献 in doc 44802: 1
+呈献 in doc 54447: 1
+呈献 in doc 153348: 1
+呈献 in doc 157660: 1
+呈献 in 5 documents
+
+idf(t)  =   	1 + log ( 	
+numDocs
+–––––––––
+docFreq+1
+	)
+
+在 23352 中：
+tf = 1
+idf = 5
+
+
+特征矩阵
+id   term1  term2   term3   
+1
+2
+3
+
+每个doc来一个 dict，或者list，其实list貌似更好，因为省时间，而且扫描的顺序都是一定的
+
+	list = [docList1, docList2,...]
+
+实际扫描因为是先扫term，所以是以列为主序，扫到一个term，然后看哪个文档有，塞到对应的docList ，以及对应的位置(当前term位置)
+
+

@@ -160,6 +160,7 @@ def run(command,searcher, aWrapper):
     retList = movieDictList
     retList = utils.reRank(movieDictList,maxDict,command)
 
+
     #人工排序
     #retList = sorted(retList, key=operator.itemgetter('boost'), reverse=True)  
 
@@ -174,6 +175,15 @@ def printResult(retList):
     for each in retList:
         print each['subject_id'] + ':' +each['title'] + 'boost->'+ str(each['boost'])+'|| score:'+str(each['score'])
         #print each['subject_id'] + ':' +each['title'] + 'boost->'+ str(each['boost'])+'|| score:'+str(each['score']) + ' ^'+each['user_tags']+'\n'
+
+
+
+
+
+
+
+
+
 
 if __name__ == '__main__':
     lucene.initVM(vmargs=['-Djava.awt.headless=true'])

@@ -16,6 +16,14 @@ from datetime import *
 import operator
 
 
+def simlifyRetDict(retDict):
+	reservedList = ['subject_id','title','directors','summary','image_small','score','boost']
+	keyList = retDict.keys()
+	for eachKey in keyList:
+		if eachKey not in reservedList:
+			retDict.pop(eachKey)
+
+
 def formatYear(yearStr):
 	#usage: this function is used for format the 'year' field in sql to the date type in python 
 	# 豆瓣的 year 字段 有几种主要的，还有无数狗屎一样的
@@ -350,9 +358,9 @@ def calcBoostProb(doc_row,maxDict):
 	rating_total = f_tu(rating_total)
 	impressive = f_tu(impressive)
 
-	#稀疏银子，因为rating_av/10 的结果相对数值比较大，而impressive的结果比较小
+	#稀疏因子，因为rating_av/10 的结果相对数值比较大，而impressive的结果比较小
 	#一个好的加权，应该保证这几个维度上的数值都在差不多的范围
-	sparse = 1
+	sparse = 0.3
 	#it is a measure of whether a movie should be addBoost, =1 means it is a  totally good movie which should be boosted
 	boostProb = 0.4*((float(rating_av)/10)*sparse) + 0.4*impressive + 0.15*popularity + 0.05*trends
 
@@ -364,20 +372,19 @@ def calcBoostProb(doc_row,maxDict):
 
 def getFieldValueInCommand(command,field):
 	#usage: return a Value of field in command in the type of list
+	#！！！！！！！！！！！！！服务器的时候 不要下面这句话
 	command = unicode(command,'utf-8')
 	offset = command.find(field)
 	if  offset >= 0: #说明使用了field搜索 
 		offset = offset + len(field) + 1 #get to the position after the ':' of the field
 		start = offset 
 
-		print 'command:'+str(len(command))
 		while offset<len(command):
 			if command[offset] != ':':
 				offset = offset + 1
 			else:
 				break
 		tag_ = command[start:offset] #it's like 'tag1 tag2 NextField '
-		print tag_
 		if tag_[-1] == u':':
 			tag_list = tag_.split(u' ')[0:-1] #get rid of the 'NextFiled'
 		else:
@@ -418,7 +425,6 @@ def reRank(movieDictList,maxDict,command=None,rankFlag = None):
 
 		#process tags
 		tag_list = getFieldValueInCommand(command,'user_tags')
-		print '-----------'
 		if tag_list: #exist
 			for eachTag in tag_list: #再raw中搜索每个再command中出现的tag
 				raw_tags = eachDict['raw_user_tags']
@@ -428,6 +434,8 @@ def reRank(movieDictList,maxDict,command=None,rankFlag = None):
 
 		boost = boost * times
 		eachDict['score'] = eachDict['score']*boost
+
+		simlifyRetDict(eachDict)
 
 	retMovieList = sorted(movieDictList, key=operator.itemgetter('score'), reverse=True)  
 	return retMovieList

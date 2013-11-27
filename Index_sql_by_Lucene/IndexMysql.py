@@ -237,7 +237,7 @@ class IndexMySql(object):
                 doc.add(IntField("subject_id", int(row[SUBJECT_ID]), Field.Store.YES))
                 doc.add(IntField("comments_count", int(row[COMMENTS_COUNT]), Field.Store.YES))
                 doc.add(IntField("ratings_count", int(row[RATINGS_COUNT]), Field.Store.YES))
-                #doc.add(Field("image_small", row[IMAGE_SMALL], t1),Field.Store.NO))
+                doc.add(StringField("image_small", row[IMAGE_SMALL], Field.Store.YES))
 
                 #fields which should be analyzed with WhitespaceAnalyzer
                 #attention!!! dont use a long sentence like :

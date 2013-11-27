@@ -18,7 +18,7 @@ from org.apache.lucene.search import IndexSearcher ,SortField ,Sort
 from org.apache.lucene.util import Version
 from org.apache.lucene.search import BooleanClause
 
-from org.apache.lucene.search.similarities import BM25Similarity
+from org.apache.lucene.search.similarities import BM25Similarity,DefaultSimilarity
 
 import json
 import operator
@@ -28,6 +28,8 @@ from org.apache.lucene.analysis import TokenStream
 from org.apache.lucene.analysis.tokenattributes import \
     OffsetAttribute, CharTermAttribute, TypeAttribute, \
     PositionIncrementAttribute
+
+import utils 
 
 
 #what need to do 
@@ -41,6 +43,10 @@ INDEX_DIR = "/home/env-shared/NGfiles/lucene_index"
 #the field name you want to search
 #this list correspond to the order of the field in the sql
 
+
+class IsolationSimilarity(DefaultSimilarity):
+    def tf(docFreq,numDocs):
+        return float(1.0)
 
 
 def initJvm():
@@ -127,30 +133,37 @@ def run(command,searcher, aWrapper):
     scoreDocs = searcher.search(query, 50).scoreDocs
 
 
-    retList = []
-    for scoreDoc in scoreDocs:
-        doc = searcher.doc(scoreDoc.doc)
-        score = scoreDoc.score
-        #print 'subject_id:', doc.get('subject_id')
-        #print 'title:', doc.get('title')
 
-        tmpDict = {
-        'subject_id':doc.get('subject_id'),
-        'title':doc.get('title'),
-        'directors':doc.get('directors'),
-        'summary':doc.get('summary'),
-        'image_small':doc.get('image_small'),
-        'boost':doc.get('boost'),
-        'user_tags':doc.get('user_tags'),
-        'year':doc.get('year'),
-        'score':score
-        }
-        retList.append(tmpDict)
-    del searcher
+
+    # retList = []
+    # for scoreDoc in scoreDocs:
+    #     doc = searcher.doc(scoreDoc.doc)
+    #     score = scoreDoc.score
+    #     #print 'subject_id:', doc.get('subject_id')
+    #     #print 'title:', doc.get('title')
+
+    #     tmpDict = {
+    #     'subject_id':doc.get('subject_id'),
+    #     'title':doc.get('title'),
+    #     'directors':doc.get('directors'),
+    #     'summary':doc.get('summary'),
+    #     'image_small':doc.get('image_small'),
+    #     'boost':doc.get('boost'),
+    #     'user_tags':doc.get('user_tags'),
+    #     'year':doc.get('year'),
+    #     'score':score
+    #     }
+    #     retList.append(tmpDict)
+
+    maxDict = utils.maxDict
+    movieDictList =  utils.scoreDocs2dictList(scoreDocs,searcher)
+    retList = movieDictList
+    retList = utils.reRank(movieDictList,maxDict,command)
 
     #人工排序
     #retList = sorted(retList, key=operator.itemgetter('boost'), reverse=True)  
 
+    del searcher
     return retList
 
 
@@ -159,7 +172,8 @@ def printResult(retList):
     # unicode !
     #print retList[0]['title'].encode('utf-8')
     for each in retList:
-        print each['subject_id'] + ':' +each['title'] + 'boost->'+ str(each['boost']+'|| score:'+str(each['score']))
+        print each['subject_id'] + ':' +each['title'] + 'boost->'+ str(each['boost'])+'|| score:'+str(each['score'])
+        #print each['subject_id'] + ':' +each['title'] + 'boost->'+ str(each['boost'])+'|| score:'+str(each['score']) + ' ^'+each['user_tags']+'\n'
 
 if __name__ == '__main__':
     lucene.initVM(vmargs=['-Djava.awt.headless=true'])

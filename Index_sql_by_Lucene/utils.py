@@ -13,6 +13,7 @@ import MySQLdb as mdb
 from sqlConstants import *
 from time import sleep
 from datetime import *
+import operator
 
 
 def formatYear(yearStr):
@@ -89,10 +90,6 @@ def formatYear(yearStr):
 
 			else:
 				year = '0001'
-
-
-
-
 	else:
 		year = '0001'
 		month = '01'
@@ -130,6 +127,95 @@ def formatYear(yearStr):
 	# mDate = date(int(year),1,1)
 
 
+def scoreDocs2dictList(scoreDocs,searcher):
+	movieDictList = []
+	_pointer = 0
+	for scoreDoc in scoreDocs:
+		movieDictList.append({})
+		score = scoreDoc.score
+		doc = searcher.doc(scoreDoc.doc)
+		fieldsList = doc.getFields()
+		for eachField in fieldsList:
+			fieldName = eachField.name()
+			fieldValue = eachField.stringValue()
+			movieDictList[_pointer][fieldName] = fieldValue
+		movieDictList[_pointer]['score'] = score
+		_pointer = _pointer + 1
+	#print movieDictList[0].keys()
+	return movieDictList
+		
+	
+
+def basicFeaturesOfMovie(doc_row,maxDict):
+	#usage: get a the impressive popularity and the other feature of a movie to reRank
+	# it should get all features needed in setBoost and reRank
+
+
+	#一个傻逼的函数重载。。。
+	if isinstance(doc_row,tuple):
+		#ratings
+		rating_av = doc_row[RATING_AVERAGE] if doc_row[RATING_AVERAGE]is not None else 0
+		ratings_c = doc_row[RATINGS_COUNT] if doc_row[RATINGS_COUNT]is not None else 0
+		#rating_stars = doc_row['rating_stars'] useless because it's just a part of rating_av,every 5 start for half a star 
+
+		#在看 看过 想看
+		do_c = doc_row[DO_COUNT]  if doc_row[DO_COUNT] is not None else 0
+		collect_c = doc_row[COLLECT_COUNT]  if doc_row[COLLECT_COUNT] is not None else 0
+		wish_c = doc_row[WISH_COUNT] if doc_row[WISH_COUNT] is not None else 0
+
+		#评论
+		comments_c = doc_row[COMMENTS_COUNT] if doc_row[COMMENTS_COUNT] is not None else 0
+		reviews_c = doc_row[REVIEWS_COUNT] if doc_row[REVIEWS_COUNT] is not None else 0
+	elif isinstance(doc_row,dict):
+		#ratings
+		rating_av = float(doc_row['rating_average']) if doc_row['rating_average']is not None else 0
+		ratings_c = int(doc_row['ratings_count']) if doc_row['ratings_count']is not None else 0
+		#rating_stars = doc_row['rating_stars'] useless because it's just a part of rating_av,every 5 start for half a star 
+
+		#在看 看过 想看
+		do_c = int(doc_row['do_count'])  if doc_row['do_count'] is not None else 0
+		collect_c = int(doc_row['collect_count'])  if doc_row['collect_count'] is not None else 0
+		wish_c = int(doc_row['wish_count']) if doc_row['wish_count'] is not None else 0
+
+		#评论
+		comments_c = int(doc_row['comments_count']) if doc_row['comments_count'] is not None else 0
+		reviews_c = int(doc_row['reviews_count']) if doc_row['reviews_count'] is not None else 0
+
+	#denorm
+	#rating_total_denorm #和下面的区别：所有 av×人数/max(av×人数) 和直接拿 avx人数/10×max(人数) 差不多
+	#rating_av_max = float(maxDict['rating_av_max'])
+	ratings_c_max  = float(maxDict['ratings_c_max'])
+	do_c_max = float(maxDict['do_c_max'])
+	wish_c_max =  float(maxDict['wish_c_max'])
+	collect_c_max = float(maxDict['collect_c_max'])
+	comments_c_max =  float(maxDict['comments_c_max'])
+	reviews_c_max =  float(maxDict['reviews_c_max'])
+	dcw_max = float(maxDict['dcw_max'])
+	tr_max = float(maxDict['tr_max'])
+
+	#-----------------
+	#all need to return 
+
+	#normlization !!!
+	#越高越好，但是要在一定程度上避免 平均分比较低 但是 评分人数高的电影
+	#虽然有时候也需要这样
+	rating_total = (rating_av * ratings_c)/(10*ratings_c_max)
+	
+	#可以反映一个电影的受欢迎程度
+	popularity = (do_c + collect_c + wish_c)/dcw_max
+
+	#trends如果太小，那么就说明这个电影已经过气了,而如果wish_c比较多，则说明最近比较火. 注意这个值在normalize之前可能会大于1
+	#最近的火热程度
+	trends = (wish_c/(collect_c+do_c))/tr_max if collect_c != 0 else 0
+
+	#观后感，反应影片的深刻程度 长评显然比短评更有意义
+	impressive = 0.2*comments_c/comments_c_max + 0.8*reviews_c/reviews_c_max
+
+
+	#是不是新电影，新的程度，越小越新
+	#new_degree = 20131231 - int(doc.get('year').replace('-',''))
+
+	return rating_av, rating_total, popularity, trends, impressive
 
 
 
@@ -147,8 +233,6 @@ def f(x):
 	
 	return y 
 
-
-
 def f_tu(x):
 	#z is f(0.5) , it should be 0.5~1 here
 	z = 0.7
@@ -157,7 +241,6 @@ def f_tu(x):
 	y = a*x*x + b*x
 	return y
 
-
 def f_ao(x):
 	#z is f(0.5) , it should be 0~0.5 here
 	z = 0.3
@@ -165,10 +248,6 @@ def f_ao(x):
 	a = 1-b
 	y = a*x*x + b*x
 	return y
-
-
-
-
 
 def getMax():
 	#usage: this script is used for getting the max, for normalization
@@ -251,63 +330,131 @@ def getMax():
 
 			return maxDict
 
-
+maxDict = {
+	'comments_c_max': 140283, 
+	'ratings_c_max': 470876, 
+	'prob_max': 0, 
+	'do_c_max': 23873, 
+	'collect_c_max': 610043, 
+	'dcw_max': 671908, 
+	'tr_max': 77.0, 
+	'wish_c_max': 77535, 
+	'reviews_c_max': 5216
+}
 
 def calcBoostProb(doc_row,maxDict):
+
+	rating_av, rating_total, popularity, trends, impressive = basicFeaturesOfMovie(doc_row,maxDict)
 	
-	#ratings
-	rating_av = doc_row[RATING_AVERAGE] if doc_row[RATING_AVERAGE]is not None else 0
-	ratings_c = doc_row[RATINGS_COUNT] if doc_row[RATINGS_COUNT]is not None else 0
-	#rating_stars = doc_row['rating_stars'] useless because it's just a part of rating_av,every 5 start for half a star 
-
-	#在看 看过 想看
-	do_c = doc_row[DO_COUNT]  if doc_row[DO_COUNT] is not None else 0
-	collect_c = doc_row[COLLECT_COUNT]  if doc_row[COLLECT_COUNT] is not None else 0
-	wish_c = doc_row[WISH_COUNT] if doc_row[WISH_COUNT] is not None else 0
-
-	#评论
-	comments_c = doc_row[COMMENTS_COUNT] if doc_row[COMMENTS_COUNT] is not None else 0
-	reviews_c = doc_row[REVIEWS_COUNT] if doc_row[REVIEWS_COUNT] is not None else 0
-
-	
-	#denorm
-	#rating_total_denorm #和下面的区别：所有 av×人数/max(av×人数) 和直接拿 avx人数/10×max(人数) 差不多
-	#rating_av_max = float(maxDict['rating_av_max'])
-	ratings_c_max  = float(maxDict['ratings_c_max'])
-	do_c_max = float(maxDict['do_c_max'])
-	wish_c_max =  float(maxDict['wish_c_max'])
-	collect_c_max = float(maxDict['collect_c_max'])
-	comments_c_max =  float(maxDict['comments_c_max'])
-	reviews_c_max =  float(maxDict['reviews_c_max'])
-	dcw_max = float(maxDict['dcw_max'])
-	tr_max = float(maxDict['tr_max'])
-
-
-	#normlization !!!
-	#越高越好，但是要在一定程度上避免 平均分比较低 但是 评分人数高的电影
-	#虽然有时候也需要这样
-	rating_total = (rating_av * ratings_c)/(10*ratings_c_max)
-	
-	#可以反映一个电影的受欢迎程度
-	popularity = (do_c + collect_c + wish_c)/dcw_max
-
-	#trends如果太小，那么就说明这个电影已经过气了,而如果wish_c比较多，则说明最近比较火. 注意这个值在normalize之前可能会大于1
-	#最近的火热程度
-	trends = (wish_c/(collect_c+do_c))/tr_max if collect_c != 0 else 0
-
-	#观后感，反应影片的深刻程度
-	impressive = 0.3*comments_c/comments_c_max + 0.7*reviews_c/reviews_c_max
-
 	#temp adjustment
 	rating_total = f_tu(rating_total)
 	impressive = f_tu(impressive)
 
-
+	#稀疏银子，因为rating_av/10 的结果相对数值比较大，而impressive的结果比较小
+	#一个好的加权，应该保证这几个维度上的数值都在差不多的范围
+	sparse = 1
 	#it is a measure of whether a movie should be addBoost, =1 means it is a  totally good movie which should be boosted
-	boostProb = 0.4*(float(rating_av)*0.3/10) + 0.4*impressive + 0.15*popularity + 0.05*trends
+	boostProb = 0.4*((float(rating_av)/10)*sparse) + 0.4*impressive + 0.15*popularity + 0.05*trends
 
 	#print rating_total, impressive, popularity, trends
 	return boostProb
+
+
+
+
+def getFieldValueInCommand(command,field):
+	#usage: return a Value of field in command in the type of list
+	command = unicode(command,'utf-8')
+	offset = command.find(field)
+	if  offset >= 0: #说明使用了field搜索 
+		offset = offset + len(field) + 1 #get to the position after the ':' of the field
+		start = offset 
+
+		print 'command:'+str(len(command))
+		while offset<len(command):
+			if command[offset] != ':':
+				offset = offset + 1
+			else:
+				break
+		tag_ = command[start:offset] #it's like 'tag1 tag2 NextField '
+		print tag_
+		if tag_[-1] == u':':
+			tag_list = tag_.split(u' ')[0:-1] #get rid of the 'NextFiled'
+		else:
+			tag_list = tag_.split(u' ') #get rid of the 'NextFiled'
+		return tag_list
+	else:
+		return False
+
+def getTagValueInRawTags(raw_user_tags,tag):
+	#usage: return a num of tag in raw_user_tags in the type of list
+	offset = raw_user_tags.find(tag)
+	if  offset >= 0: #说明使用了field搜索 
+		offset = offset + len(tag) #get to the next position of the field
+		start = offset 
+
+		while offset<len(raw_user_tags):
+			if raw_user_tags[offset] != u'￥':
+				offset = offset + 1
+			else:
+				break
+		num_ = raw_user_tags[start:offset] #it's like '<>123'
+		tag_num = int(num_[2:]) #get rid of the '<>'
+		if tag_num == 0:
+			exit('error when analyzing the raw_user_tags')
+		return tag_num
+	else:
+		return False
+
+
+def reRank(movieDictList,maxDict,command=None,rankFlag = None):
+	#reRank的最核心的意义在于将command 信息融入，可以弥补一些缺陷比如 user_tags后的人数对加权的作用有限
+	#rankFlag 是按照什么排序，如果该值为 None，直接reRank
+	for eachDict in movieDictList:
+		boost = 1 # 初始boost
+		times = 1 # 倍数
+		print 
+		rating_av, rating_total, popularity, trends, impressive = basicFeaturesOfMovie(eachDict,maxDict)
+
+		#process tags
+		tag_list = getFieldValueInCommand(command,'user_tags')
+		print '-----------'
+		if tag_list: #exist
+			for eachTag in tag_list: #再raw中搜索每个再command中出现的tag
+				raw_tags = eachDict['raw_user_tags']
+				tag_num = getTagValueInRawTags(raw_tags,eachTag)
+				if tag_num:
+					times = times*(1 + tag_num*TAG_NUM_FACTOR) #0.0001 now
+
+		boost = boost * times
+		eachDict['score'] = eachDict['score']*boost
+
+	retMovieList = sorted(movieDictList, key=operator.itemgetter('score'), reverse=True)  
+	return retMovieList
+
+
+
+
+
+
+
+
+		
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

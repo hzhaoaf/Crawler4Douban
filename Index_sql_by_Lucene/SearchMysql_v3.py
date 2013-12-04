@@ -81,7 +81,7 @@ def printWrappedAnalyzer(aWrapper):
 
 def run(command,searcher, aWrapper):
 
-    print
+    print 
 
     if command == '':
         return

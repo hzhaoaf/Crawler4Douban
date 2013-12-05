@@ -13,6 +13,7 @@ from org.apache.lucene.util import BytesRefIterator
 
 import math
 import numpy as np
+from scipy.sparse import coo_matrix
 
 #索引存放位置
 INDEX_DIR = "/home/env-shared/NGfiles/lucene_index"
@@ -41,7 +42,8 @@ def idf(docFreq,numDocs):
 	return idf
 
 def appendZero2Matrix(termsMatrix):
-	#usage：动态分配内存
+	#usage：动态append元素到mat的每一行
+	#使用 list嵌套list的matrix
 	docNums =  len(termsMatrix)
 	for i in range(docNums):
 		termsMatrix[i].append(0)
@@ -77,7 +79,6 @@ def formatWriteMatrix(mat,f):
 #用来记录特征矩阵
 termsFile = open('termsMatrix.txt','w')
 
-
 #动态分配 使用list
 # #termsMatrix = [[]]*numDocs  #不能使用这种形式，这是浅拷贝
 # termsMatrix = []
@@ -88,7 +89,7 @@ termsFile = open('termsMatrix.txt','w')
 numTerms = 135310
 termsMatrix = np.zeros((numDocs,numTerms)) #需要跑一遍才能知道这个数字
 
-
+#coo_matrix((3,4), dtype=np.int8)
 
 #按照 field -> terms -> doc 的顺序遍历
 for field in fields:

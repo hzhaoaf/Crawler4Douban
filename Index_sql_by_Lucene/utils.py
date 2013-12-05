@@ -420,7 +420,7 @@ def reRank(movieDictList,maxDict,command=None,rankFlag = None):
 	for eachDict in movieDictList:
 		boost = 1 # 初始boost
 		times = 1 # 倍数
-		print 
+
 		rating_av, rating_total, popularity, trends, impressive = basicFeaturesOfMovie(eachDict,maxDict)
 
 		#process tags

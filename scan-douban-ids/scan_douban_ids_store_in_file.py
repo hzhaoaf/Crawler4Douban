@@ -6,24 +6,22 @@
 '''
 
 import httplib
-#import MySQLdb as mdb
 import threading
 import Queue
 import time
 import socket
 
-#socket.setdefaulttimeout(60)
+timeout = 60
+socket.setdefaulttimeout(timeout)
 
 headers = {'Connection': 'keep-alive'}
 
-start_id = 1
-end_id   = 30000000
+start_id = 1000000
+end_id   = 1299999
 
 print 'Will check ID from ' + str(start_id) + ' to ' + str(end_id)
 
 
-#dbconn = mdb.Connection(host = '127.0.0.1', user = 'user', passwd = '******', db = 'dbname', charset='utf8')
-#cursor = dbconn.cursor()
 res_set = set()
 res_list = []
 id_queue = Queue.Queue(100)
@@ -54,11 +52,10 @@ def check_album_id():
                 print 'ID: ' + str(albumid)
                 location = location.replace('http://movie.douban.com/subject/', '')
                 location = location.replace('/', '')
+
+                # Get lock
                 lock.acquire()
-                #cursor.execute("select * from album where album_url = %s", location)
-                #if cursor.fetchone() == None:
-                #    cursor.execute('INSERT INTO album(album_url) values (%s)', location)
-                #    dbconn.commit()
+
                 if location not in res_set:
                     cnt += 1
                     res_list.append(location)
@@ -69,16 +66,23 @@ def check_album_id():
                         f.close()
                         res_list = []
                         print 'get 1000 movie total %s test id is %s' %(str(cnt), str(albumid))
+
+                # Release lock
                 lock.release()
+
             conn.close()
             id_queue.task_done()
             time.sleep(0.01)
         except (httplib.HTTPException, socket.error) as e:
-            print 'Exception occured!'
-	    print "Error: %s" % e
+            print 'Exception occured for ID:%s' % (albumid)
+            if hasattr(e, 'code'):
+	            print "Error Code: %s" % (e.code)
+            if hasattr(e, 'reason'):
+	            print "Error Reason: %s" % (e.code)
+
         except KeyboardInterrupt:
-	    print "Ctrl+C pressed..."
-	    sys.exit()
+	        print "Ctrl+C pressed..."
+	        sys.exit()
 
 
 all_threads = []
@@ -95,8 +99,8 @@ for j in range(50):
     id_queue.put(None)
 
 id_queue.join()
+
 for thread in all_threads:
     thread.join()
 
-#dbconn.close()
 print 'All Done.'

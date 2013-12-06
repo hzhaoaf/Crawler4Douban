@@ -6,7 +6,7 @@ from sqlConstants import *
 from time import sleep
 import codecs
 import PyNLPIR
-from time import clock as now 
+from time import time as now 
 
 #usage: this script is used for get files of text after split words
 import sys
@@ -51,6 +51,17 @@ def utf8ToGbk(str_utf8):
         str_gbk = str_gbk + char_gbk
     return str_gbk
 
+def uni8ToGbk(str_uni):
+    str_gbk = ''
+    for eachChar in str_uni:
+        try:
+            char_gbk =  eachChar.encode('gbk')
+        except:
+            #print 'gbk have no' + eachChar
+            char_gbk =  u' '.encode('gbk')
+        str_gbk = str_gbk + char_gbk
+    return str_gbk
+
 def getAdjs(words_str):
     words_list =  words_str.split(' ')
     adjs = ''
@@ -67,23 +78,23 @@ def write2File():
 def restart_program():
     python = sys.executable
     os.execl(python, python, * sys.argv)
-time_passed = 0
 
-# test = '哈哈/a 呵呵/a af/x'
-# print getAdjs(test)
-# exit()
 
 #---pyNLPIR---
 PyNLPIR.nlpir_init('.', 'UTF-8')
-#PyNLPIR.nlpir_setposmap(ICT_POS_MAP_SECOND)
 
-with open('/home/rio/workspace/lucene/last.txt','r') as rec:
-    last = int(rec.read())
 
-con = mdb.connect('localhost','root','testgce','moviedata')
+#---------config here----
+baseDir = '/home/rio/workspace/lucene/'
+dbName = 'moviedata'
+commentsDir = '/home/rio/workspace/commentsData/'
+
+con = mdb.connect('localhost','root','testgce',dbName)
 #used for getting comments 
-con2 = mdb.connect('localhost','root','testgce','moviedata')
+con2 = mdb.connect('localhost','root','testgce',dbName)
 
+with open(baseDir+'last.txt','r') as rec:
+    last = int(rec.read())
 
 with con:
         # Careful with codecs
@@ -102,51 +113,77 @@ with con:
         cur2.execute('SET CHARACTER SET utf8;')
         cur2.execute('SET character_set_connection=utf8;')
 
-
         numrows = int(cur.rowcount)
+
         print 'numrows:',numrows
         idList = []
         resList = []
         adjList = []
         count = 0
         #last = 4567
-        last_time = now()
+        last_time = now() ###########
         for i in range(last,numrows):
+            all_start = now()############
+
             print 'index:'+str(i)
             print 'count:'+str(count)
-            time_passed = now() - last_time
-            print time_passed
-            if time_passed>7:
+
+            #make dirs 每10000个(左右)重新建立一个文件夹
+            folderID = i/10000
+            rawDir = baseDir+'fenciDataRaw/'+str(folderID)
+            adjDir = baseDir+'fenciAdj/'+str(folderID)
+            if folderID*10000 == i: #说明这10000刚开头
+                if not os.path.isdir(rawDir):
+                    os.mkdir(rawDir)
+                if not os.path.isdir(adjDir):
+                    os.mkdir(adjDir)
+
+            time_passed = now() - last_time ##########
+            print 'time_passed:' + str(time_passed)
+            if 0:
                 print u"0.3秒后,程序将重启..."
+                #如果不关闭，会出现too many connections ！
+                con.close()
+                con2.close()
                 sleep(0.3)
                 restart_program()
 
-            all_start = now()############
            
 
             get_start = now() #########
+
+            cur.scroll(i,'absolute') #如果i是30,就从下一句fetchone将得到index为30的row
             row = cur.fetchone()
 
-            #get comments 
+            #---1.get comments---
             comments = ''
             subject_id = row[SUBJECT_ID]
-            #subject_id = '6015756'
             # print 'id:'+subject_id
-            #cur2.execute("SELECT * FROM short_comments WHERE subject_id = 6015756")
-            sql = "SELECT user_comment FROM short_comments WHERE subject_id = " + subject_id
-            cur2.execute(sql)
-            comments_num = int(cur2.rowcount)
-            #print 'comments number: ' + str(comments_num)
-            for j in range(comments_num):
-                row2 = cur2.fetchone()
-                comments = comments + ' ' + row2[0] # user_comment
+            sql_start = now()##########################
+            # sql = "SELECT user_comment FROM short_comments WHERE subject_id = " + subject_id
+            # cur2.execute(sql)
+            # comments_num = int(cur2.rowcount)
+            # #print 'comments number: ' + str(comments_num)
+            # for j in range(comments_num):
+            #     row2 = cur2.fetchone()
+            #     comments = comments + ' ' + row2[0] # user_comment
+            jsonPath = commentsDir+subject_id+'.json' 
+            if os.path.exists(jsonPath):
+                with open(jsonPath,'r') as commentsJson:
+                    commDict =  json.loads(commentsJson.read())
+                for eachKey in commDict:
+                    comments = comments + ' ' + commDict[eachKey]['p']
 
-            #get summary
+
+
+            sql_end = now() ##########################
+            sql_time = sql_end - sql_start
+
+            #---2.get summary---
             summary = row[SUMMARY]
 
-            #deal with the user_tags
+            #---3.get user_tags---
             user_tags_raw = row[USER_TAGS]
-            #get user_tags
             user_tags = ''
             if user_tags_raw!='':
                 user_tags_list = user_tags_raw.split(delim)
@@ -155,35 +192,44 @@ with con:
                     if eachTag_pair!='':  #开始或者结尾的'￥'可能分割之后会有空字符串
                         user_tags = user_tags + eachTag_pair.split(delim_uo)[0] #[0] 是真正的tag，[1]是一个人数
             
-            get_end = now()
+            get_end = now() ###############
             get_time = get_end - get_start
+
 
             fenci_start = now()
 
-            # -------
-            if comments != '' and comments != None:
-                comments_gbk = utf8ToGbk(comments)
-                comments_ = PyNLPIR.nlpir_paragraph_process(comments_gbk, True)
-            else:
-                comments_ = ''
+            # ---fenci start---
+            try:
+                if comments != '' and comments != None:
+                    comments_gbk = uni8ToGbk(comments)  #json.loads() 使comments变成了unicode
+                    comments_ = PyNLPIR.nlpir_paragraph_process(comments_gbk, True)
+                else:
+                    comments_ = ''
 
-            if summary != '' and summary != None:
-                summary_gbk = utf8ToGbk(summary)
-                summary_ = PyNLPIR.nlpir_paragraph_process(summary_gbk, True)
-            else:
-                summary_ = ''
 
-            if user_tags != '' and user_tags != None:
-                user_tags_gbk = utf8ToGbk(user_tags)
-                user_tags_ = PyNLPIR.nlpir_paragraph_process(user_tags_gbk, True)
-            else:
-                user_tags_ = ''
+                if summary != '' and summary != None:
+                    summary_gbk = utf8ToGbk(summary)
+                    summary_ = PyNLPIR.nlpir_paragraph_process(summary_gbk, True)
+                else:
+                    summary_ = ''
+
+                if user_tags != '' and user_tags != None:
+                    user_tags_gbk = utf8ToGbk(user_tags)
+                    #4568的时候出现短错误！！！！！！
+                    if i not in [4568,6471,21310,41248,42070,42524,70616,76265]:
+                        user_tags_ = PyNLPIR.nlpir_paragraph_process(user_tags_gbk, True)
+                else:
+                    user_tags_ = ''
+            except:
+                with open(baseDir+'err.txt','a') as err:
+                    err.write(subject_id)
             fenci_end = now()
             fenci_time = fenci_end - fenci_start
-            append_start = now()
-     
-            #---pyNLPIR---
+            
+            #---fenci end---
 
+            #---append to three list---
+            append_start = now() ########
             idList.append(subject_id)
 
             fenciDict = {}
@@ -193,52 +239,53 @@ with con:
             resList.append(fenciDict)
 
 
-            #get adjs
+            #---get adjs---
+            adjDict = {}
             comments_adjs = getAdjs(comments_)
             summary_adjs = getAdjs(summary_)
             user_tags_adjs = getAdjs(user_tags_)
-            adjDict = {}
             adjDict['comments_adjs'] = comments_adjs 
             adjDict['summary_adjs']  = summary_adjs
             adjDict['user_tags_adjs'] = user_tags_adjs
             adjList.append(adjDict)
 
-            append_end = now()
+            append_end = now()########
             append_time = append_end - append_start
 
-
+            #---write---
             write_start = now()#############
-
             count  = count + 1
 
             NUM = 30
             # 1~100 一共100个
-            if count == NUM:
-                for k in range(NUM):
-                    with open('/home/rio/workspace/lucene/fenciDataRaw/' + idList[k]+'_res.json','w') as recFile:
+            if count == NUM or i==(numrows-1):
+                for eachId in idList:
+                    print eachId
+                
+                for k in range(count):
+                    with open(rawDir+'/' + idList[k]+'_res.json','w') as recFile:
                         recFile.write(json.dumps(resList[k]))
-                        #others like 不用存储
                         recFile.close()
-                    with open('/home/rio/workspace/lucene/fenciAdj/' + idList[k]+'_adj.json','w') as recFile2:
+
+                    with open(adjDir+'/' + idList[k]+'_adj.json','w') as recFile2:
                         recFile2.write(json.dumps(adjList[k]))
                         recFile2.close()
 
-                    #sql = 'INSERT INTO movie_items (summary_segmentation, adjs) VALUES ('+json.dumps(resList[k])+',' + json.dumps(adjList[k])+')'
-                    #print sql
-                    #cur2.execute(sql)
                 count = 0
                 idList = []
                 resList = []
-                adjDict = []
+                adjList = []
 
-                with open('/home/rio/workspace/lucene/last.txt','w') as rec:
+                with open(baseDir+'last.txt','w') as rec:
                     rec.write(str(i))
             write_end = now()##########
             write_time = write_end - write_start
+            #---write end ---
 
             all_end = now()
             all_time = all_end - all_start
-            #print get_time,fenci_time,append_time,write_time,all_time,gap_time
+            #print get_time,fenci_time,append_time,write_time,all_time
+            #print sql_time
 
 
 PyNLPIR.nlpir_exit()

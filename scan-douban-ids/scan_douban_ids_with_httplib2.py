@@ -5,7 +5,7 @@
     NG Team
 '''
 
-import httplib
+import httplib2
 import threading
 import Queue
 import time
@@ -20,7 +20,6 @@ start_id = 1000000
 end_id   = 1299999
 
 print 'Will check ID from ' + str(start_id) + ' to ' + str(end_id)
-
 
 res_set = set()
 res_list = []
@@ -44,18 +43,19 @@ def check_album_id():
             if albumid % 100000 == 0:
                  print 'test album id %s crawled %s movies cost %.2fmin' % (albumid, cnt, (time.time() - pro_start) / 60.0)
 
-            conn = httplib.HTTPConnection("www.douban.com")
-            conn.request(method='GET', url='/subject/' + str(albumid) + '/', headers=headers)
-            response = conn.getresponse()
-            location = response.getheader('location', '')
+            conn = httplib2.Http()
+            response, content = conn.request(uri='http://www.douban.com/subject/' + str(albumid) + '/', method='GET', headers=headers)
+
+            location = ''
+            if hasattr(response, 'content-location'):
+                location = response['content-location']
+
             if location.find('movie.douban.com') > 0:
                 print 'ID: ' + str(albumid)
                 location = location.replace('http://movie.douban.com/subject/', '')
                 location = location.replace('/', '')
 
-                # Get lock
                 lock.acquire()
-
                 if location not in res_set:
                     cnt += 1
                     res_list.append(location)
@@ -66,20 +66,17 @@ def check_album_id():
                         f.close()
                         res_list = []
                         print 'get 1000 movie total %s test id is %s' %(str(cnt), str(albumid))
-
-                # Release lock
                 lock.release()
 
-            conn.close()
             id_queue.task_done()
             time.sleep(0.01)
-        except (httplib.HTTPException, socket.error) as e:
+        except (httplib2.HttpLib2Error, socket.error) as e:
             print 'Exception occured for ID:%s' % (albumid)
+
             if hasattr(e, 'code'):
 	            print "Error Code: %s" % (e.code)
             if hasattr(e, 'reason'):
-	            print "Error Reason: %s" % (e.code)
-
+	            print "Error Reason: %s" % (e.reason)
         except KeyboardInterrupt:
 	        print "Ctrl+C pressed..."
 	        sys.exit()

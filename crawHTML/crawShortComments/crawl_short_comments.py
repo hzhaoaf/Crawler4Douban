@@ -17,7 +17,7 @@ if not os.path.isdir(htmls_dir):
 	os.mkdir(htmls_dir)
 	
 #要操作的id文件
-id_file = './ShortCommentsId-1298174--1920665'
+id_file = './ShortCommentsId-1920713--2389554'
 
 lines = open(id_file, "r").readlines()
 for line in lines:
@@ -25,10 +25,28 @@ for line in lines:
 	assessNum = line.strip().split('|')[1]
 	print 'now is dealing with %s '% eid
 	#调用爬虫程序 传入eid和该id对应的短评数
-	sampleComment.CrawlComments(eid , int(assessNum) , htmls_dir)
+	try:
+		sampleComment.CrawlCommentsById(eid , int(assessNum) , htmls_dir)
+	except Exception, e:
+		print 'this round error'
+	#sampleComment.CrawlComments(eid , int(assessNum) , htmls_dir)
 	count += 1
 	if count % 10 ==0:
 		print 'crawl %s th id:%s, total cost %.2fmin' % (count, eid, (time.time() - start_time) / 60.0)
+
+	if count % 3 == 0:
+		break;
+
+if True:
+	lines = open(id_file, "r").readlines()
+    lines = lines[count:]
+    f = open(id_file, "w+")
+    [f.write('%s' % l) for l in lines]
+    f.close()
+    print 'rewrite txt,delete %s' % (count)
+    
+if len(oldRemainingLines) < 3:
+	print 'there are 3 files remain'
 
 	'''
 	if int(assessNum) >10:

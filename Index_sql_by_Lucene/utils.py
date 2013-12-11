@@ -17,7 +17,7 @@ import operator
 
 
 def simlifyRetDict(retDict):
-	reservedList = ['subject_id','title','directors','summary','image_small','score','boost']
+	reservedList = ['subject_id','title','directors','summary','image_small','rating_average','collect_count','user_tags','countries','score','boost']
 	keyList = retDict.keys()
 	for eachKey in keyList:
 		if eachKey not in reservedList:

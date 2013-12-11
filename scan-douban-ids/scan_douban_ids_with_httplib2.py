@@ -47,7 +47,7 @@ def check_album_id():
             response, content = conn.request(uri='http://www.douban.com/subject/' + str(albumid) + '/', method='GET', headers=headers)
 
             location = ''
-            if hasattr(response, 'content-location'):
+            if 'content-location' in response:
                 location = response['content-location']
 
             if location.find('movie.douban.com') > 0:

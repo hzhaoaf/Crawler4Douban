@@ -12,15 +12,15 @@ import os
 import sys
 
 # import all user scripts
-import getBasicMovieInfo
-import detailsCrawler
-import shortCommentsCrawler
-import awardsCrawler
-import userTagsParser
-import othersLikeParser
-import shortCommentsCountParser
-import shortCommentsParser
-import awardsParser
+from crawlerModule import basicInfoCrawler
+from crawlerModule import detailsCrawler
+from crawlerModule import shortCommentsCrawler
+from crawlerModule import awardsCrawler
+from parserModule import awardsParser
+from parserModule import userTagsParser
+from parserModule import othersLikeParser
+from parserModule import shortCommentsCountParser
+from parserModule import shortCommentsParser
 
 timeout = 60
 socket.setdefaulttimeout(timeout)

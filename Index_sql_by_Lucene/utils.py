@@ -136,8 +136,9 @@ def formatYear(yearStr):
 
 
 def scoreDocs2dictList(scoreDocs,searcher):
+	#usage:将scoreDoc的转换成dict list的结构
 	movieDictList = []
-	_pointer = 0
+	_pointer = 0 #iterator
 	for scoreDoc in scoreDocs:
 		movieDictList.append({})
 		score = scoreDoc.score

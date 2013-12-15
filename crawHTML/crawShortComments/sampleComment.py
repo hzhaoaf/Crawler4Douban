@@ -14,14 +14,14 @@ socket.setdefaulttimeout(100)
 
 def CrawlCommentsById(eid , num , htmls_dir):
 
-        cookie_support= urllib2.HTTPCookieProcessor(cookielib.CookieJar())
+    cookie_support= urllib2.HTTPCookieProcessor(cookielib.CookieJar())
 	opener = urllib2.build_opener(cookie_support, urllib2.HTTPHandler)
 	urllib2.install_opener(opener)
-	
+
 	start = 0
 	if not os.path.isdir( htmls_dir + eid):
-		os.mkdir( htmls_dir + eid)		
-	
+		os.mkdir( htmls_dir + eid)
+
 	if num > 1000:
 		end = 50
 	else:
@@ -37,13 +37,13 @@ def CrawlCommentsById(eid , num , htmls_dir):
 				data = 'no data'
 				print e.code
 				print 'this id : %s  has some error' % eid
-							
+
 			path = htmls_dir + eid + '/' + str(start) + '.html'
 			#print path
 			fileUtils.writeTo(path,data,'w')
 			time.sleep(2)
 	print eid + '    OK'
-	
+
 def restart_program():
     python = sys.executable
     os.execl(python, python, * sys.argv)
@@ -55,7 +55,7 @@ def CrawShortComments(htmls_dir,id_file):
 	score = 0
 	#时间
 	start_time = time.time()
-	end_time = time.time()	
+	end_time = time.time()
 
 	lines = open(id_file, "r").readlines()
 	oldRemainingLines = lines

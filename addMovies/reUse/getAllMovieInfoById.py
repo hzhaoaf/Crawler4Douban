@@ -11,6 +11,7 @@ import cookielib
 import os
 import sys
 import MySQLdb as mdb
+import json
 
 # import all user scripts
 from crawlerModule import basicInfoCrawler
@@ -41,7 +42,7 @@ fileMode = 'w+'
 def getAllMovieInfoBySubjectID(subjectID):
     try:
         # Some constants of file and directory names
-        dir_prefix = '~/OpenData/movie_items/itemsByID/'
+        dir_prefix = os.path.expanduser('~') + '/OpenData/movie_items/itemsByID/'
 
         basic_json = 'basic.json'
         details_html = 'details_html.html'
@@ -57,9 +58,6 @@ def getAllMovieInfoBySubjectID(subjectID):
             print 'Will create directory %s' % (dir_prefix)
             os.makedirs(dir_prefix)
 
-        if not os.path.isdir(dir_prefix + subjectID):
-            print 'Will create directory %s' % (dir_prefix + subjectID)
-            os.mkdir(dir_prefix + subjectID)
 
         shortComment_htmls_dir = dir_prefix + subjectID + '/' + shortComment_htmls_dir
 
@@ -80,16 +78,25 @@ def getAllMovieInfoBySubjectID(subjectID):
         if os.path.exists(basic_json) == False:
             print 'Getting movie basic info for ID %s...' % (subjectID)
             basicInfo = basicInfoCrawler.getBasicMovieInfoBySubjectID(subjectID)
+
             if basicInfo == None:
                 print 'Movie item %s does not exist and will exit.' % (subjectID)
                 return
+
             #print 'Basic Info: %s' % (basicInfo)
+            basicInfoJson = json.loads(basicInfo)
+
+            if not os.path.isdir(dir_prefix + subjectID):
+                print 'Will create directory %s' % (dir_prefix + subjectID)
+                os.mkdir(dir_prefix + subjectID)
+
             with open(basic_json, fileMode) as movieBasicInfo:
                 movieBasicInfo.write(basicInfo)
             print 'Movie basic info written to %s.' % (basic_json)
         else:
             print 'File %s exists and will pass.' % (basic_json)
-            basicInfo = open(basic_json, 'r').read()
+            #basicInfo = open(basic_json, 'r').read()
+            basicInfoJson = json.load(file(basic_json))
 
         '''
         Movie details HTML
@@ -98,6 +105,7 @@ def getAllMovieInfoBySubjectID(subjectID):
             print 'Crawling movie details html for ID %s...' % (subjectID)
             detailsHTML = detailsCrawler.crawlMovieDetailsHTMLPage(subjectID)
             #print 'Details HTML: %s' % (detailsHTML)
+
             with open(details_html, fileMode) as movieDetailsHTML:
                 movieDetailsHTML.write(detailsHTML)
             print 'Movie details html written to %s.' % (details_html)
@@ -113,12 +121,15 @@ def getAllMovieInfoBySubjectID(subjectID):
             print 'Parsing movie user tags for ID %s...' % (subjectID)
             userTags = userTagsParser.parseUserTagsFromHTML(detailsHTML)
             #print 'User Tags: %s' % (userTags)
+            userTagsJson = json.loads(userTags)
+
             with open(userTags_json, fileMode) as movieUserTags:
                 movieUserTags.write(userTags)
             print 'Movie user tags written to %s.' % (userTags_json)
         else:
             print 'File %s exists and will pass.' % (userTags_json)
-            userTags = open(userTags_json, 'r').read()
+            #userTags = open(userTags_json, 'r').read()
+            userTagsJson = json.load(file(userTags_json))
 
         '''
         Movie others like
@@ -127,12 +138,15 @@ def getAllMovieInfoBySubjectID(subjectID):
             print 'Parsing movie others like for ID %s...' % (subjectID)
             othersLike = othersLikeParser.parseOthersLikeFromHTML(detailsHTML)
             #print 'Others Like: %s' % (othersLike)
+            othersLikeJson = json.loads(othersLike)
+
             with open(othersLike_json, fileMode) as movieOthersLike:
                 movieOthersLike.write(othersLike)
             print 'Movie others like written to %s.' % (othersLike_json)
         else:
             print 'File %s exists and will pass.' % (othersLike_json)
-            othersLike = open(othersLike_json, 'r').read()
+            #othersLike = open(othersLike_json, 'r').read()
+            othersLikeJson = json.load(file(othersLike_json))
 
         '''
         Movie awards HTML
@@ -141,6 +155,7 @@ def getAllMovieInfoBySubjectID(subjectID):
             print 'Crawling movie awards html for ID %s...' % (subjectID)
             awardsHTML = awardsCrawler.crawlAwardslHTMLPage(subjectID)
             #print 'Awards HTML: %s' % (awardsHTML)
+
             with open(awards_html, fileMode) as movieAwardsHTML:
                 movieAwardsHTML.write(awardsHTML)
             print 'Movie awards html written to %s.' % (awards_html)
@@ -156,12 +171,15 @@ def getAllMovieInfoBySubjectID(subjectID):
             awardsInfo = awardsParser.parseAwardsInfoFromHTML(awardsHTML)
             #print type(awardsInfo)
             #print 'Awards Info: %s' % (awardsInfo)
+            awardsInfoJson = awardsInfo
+
             with open(awards_json, fileMode) as movieAwardsInfo:
-                movieAwardsInfo.write(str(awardsInfo))
+                movieAwardsInfo.write(json.dumps(awardsInfo))
             print 'Movie awards info written to %s.' % (awards_json)
         else:
             print 'File %s exists and will pass.' % (awards_json)
-            awardsInfo = open(awards_json, 'r').read()
+            #awardsInfo = open(awards_json, 'r').read()
+            awardsInfoJson = json.load(file(awards_json))
 
         '''
         Movie short comment number
@@ -173,8 +191,11 @@ def getAllMovieInfoBySubjectID(subjectID):
         Movie short comment HTML
         '''
         print 'Now crawling short comments for ID %s and will store into %s' % (subjectID, shortComment_htmls_dir)
-        htmlFilesCrawled = shortCommentsCrawler.crawlShortCommentsBySubjectID(subjectID, shortCommentsNum, shortComment_htmls_dir)
-        print 'Total %s short comment HTML files cralwed for ID %s.' % (htmlFilesCrawled, subjectID)
+        if not os.path.exists(shortComment_htmls_dir):
+            htmlFilesCrawled = shortCommentsCrawler.crawlShortCommentsBySubjectID(subjectID, shortCommentsNum, shortComment_htmls_dir)
+            print 'Total %s short comment HTML files cralwed for ID %s.' % (htmlFilesCrawled, subjectID)
+        else:
+            print 'Short comments already crawled and will pass.'
 
         '''
         Movie short comments
@@ -184,12 +205,15 @@ def getAllMovieInfoBySubjectID(subjectID):
             shortComments, shortCommentsCount = shortCommentsParser.parseShortCommentsFromHTML(subjectID, shortCommentsNum, shortComment_htmls_dir)
             print 'Parsed %s short comments in total for ID %s.' % (shortCommentsCount, subjectID)
             #print 'Short comments: %s' % (shortComments)
+            shortCommentsJson = json.loads(shortComments)
+
             with open(shortComments_json, fileMode) as movieShortComments:
                 movieShortComments.write(shortComments)
             print 'Movie short comments written to %s.' % (shortComments_json)
         else:
             print 'File %s exists and will pass.' % (shortComments_json)
-            shortComments = open(shortComments_json, 'r').read()
+            #shortComments = open(shortComments_json, 'r').read()
+            shortCommentsJson = json.load(file(shortComments_json))
 
         # Good Boy
         print 'Construction complete for %s!' % (subjectID)
@@ -197,32 +221,35 @@ def getAllMovieInfoBySubjectID(subjectID):
         print 'Echo the movie info...'
 
         print 'Basic information:'
-        print type(basicInfo)
-        print type(eval(basicInfo))
-        print basicInfo
+        print type(basicInfoJson)
+        #print type(eval(basicInfo))
+        #print basicInfo
 
         print 'User tags:'
-        print type(userTags)
-        print type(eval(userTags))
-        print userTags
+        print type(userTagsJson)
+        #print type(eval(userTags))
+        #print userTags
 
         print 'Others like:'
-        print type(othersLike)
-        print type(eval(othersLike))
-        print othersLike
+        print type(othersLikeJson)
+        #print type(eval(othersLike))
+        #print othersLike
 
         print 'Short comments:'
-        print type(shortComments)
-        print type(eval(shortComments))
-        print shortComments
+        print type(shortCommentsJson)
+        #print type(eval(shortComments))
+        #print shortComments
 
         print 'Awards Info:'
-        print type(awardsInfo)
-        print type(eval(awardsInfo))
-        print awardsInfo
+        print type(awardsInfoJson)
+        #print type(eval(awardsInfo))
+        #print awardsInfo
+        #print str(awardsInfo)
 
 
-        return subjectID, eval(basicInfo), eval(userTags), eval(othersLike), eval(shortComments), eval(awardsInfo)
+        #return subjectID, eval(basicInfo), eval(userTags), eval(othersLike), eval(shortComments), eval(awardsInfo)
+        #return subjectID, basicInfo, userTags, othersLike, shortComments, awardsInfo
+        return subjectID, basicInfoJson, userTagsJson, othersLikeJson, shortCommentsJson, awardsInfoJson
 
     except urllib2.HTTPError as e:
         if hasattr(e, 'code'):
@@ -296,8 +323,8 @@ def insertMovieInfoToMysql(subjectID, basicInfo, userTags, othersLike, shortComm
     basicInfoToMysql.insertBasicInfoToMysql(basicInfo, databaseCursor)
     userTagsToMysql.insertUserTagsToMysql(userTags, databaseCursor, subjectID)
     othersLikeToMysql.insertOthersLikeToMysql(othersLike, databaseCursor, subjectID)
-    shortCommentsToMysql.insertShortCommentsToMysql(shortComments, databaseCursor)
-    awardsToMysql.insertMovieAwardsToMysql(awardsInfo, databaseCursor)
+    shortCommentsToMysql.insertShortCommentsToMysql(shortComments, databaseCursor, subjectID)
+    awardsToMysql.insertMovieAwardsToMysql(awardsInfo, databaseCursor, subjectID)
 
     databaseConnection.commit()
 

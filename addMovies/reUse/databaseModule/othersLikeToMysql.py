@@ -22,11 +22,10 @@ updateStringWithAllStringValues = (
 
 #print updateStringWithAllStringValues
 
-def insertOthersLikeToMysql(jsonString, databaseCursor, subjectID):
+def insertOthersLikeToMysql(jsonString, databaseCursor, movie_subject_id):
     try:
         # Get seperate fields of JSON
-        insertValues = getSeperateFieldFromJson(jsonFileName, jsonString)
-        movie_subject_id = subjectID
+        insertValues = getSeperateFieldFromJson(jsonString, movie_subject_id)
 
         #print type(insertValues)
         #print insertValues
@@ -37,8 +36,9 @@ def insertOthersLikeToMysql(jsonString, databaseCursor, subjectID):
 
         if (rowCount > 0):
             # Got a record, insert to database and log the subject_id
-            print 'Insert othersLike for ID: %s' % (movie_subject_id)
+            print 'Now inserting others like...'
             affectedRows = databaseCursor.execute(updateStringWithAllStringValues, insertValues)
+            print 'Done!'
         else:
             # No record, log the subject_id
             print 'No record for ID: %s' % (movie_subject_id)
@@ -46,7 +46,7 @@ def insertOthersLikeToMysql(jsonString, databaseCursor, subjectID):
     except Exception, e:
         print "Database Error: %s" % (e)
 
-def getSeperateFieldFromJson(jsonString):
+def getSeperateFieldFromJson(jsonString, movie_subject_id):
     try:
         #print 'Now extracting seperate fields...'
         jsonKeys = jsonString.keys()
@@ -70,7 +70,7 @@ def getSeperateFieldFromJson(jsonString):
 
         othersLikeString = u'￥'.join(insertList).encode('utf-8').strip()
 
-        insertTuple = (othersLikeString,movie_subject_id)
+        insertTuple = (othersLikeString, movie_subject_id)
 
         return insertTuple
 

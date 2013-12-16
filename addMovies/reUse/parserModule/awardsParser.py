@@ -44,6 +44,8 @@ def parseAwardsInfoFromHTML(awards_html):
                 persons = '|'.join(p.text.replace(u'\xa0', u'') for p in persons)
                 info.setdefault('award_detail', []).append('%s:%s' % (award_name, persons))
             awards_info.setdefault('award_items', []).append(info)
+
         return awards_info
+
     except Exception as e:
         print 'Error occured when parsing awards info: %s' % (e)

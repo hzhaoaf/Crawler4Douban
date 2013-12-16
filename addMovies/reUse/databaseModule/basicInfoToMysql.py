@@ -139,7 +139,9 @@ def insertBasicInfoToMysql(jsonString, databaseCursor):
         insertValues = getSeperateFieldFromJson(jsonString)
 
         #databaseCursor.execute(insertStringWithValues, insertValues)
+        print 'Now inserting basic info...'
         affectedRows = databaseCursor.execute(insertStringWithAllStringValues, insertValues)
+        print 'Done!'
 
     except Exception as e:
         print "Error: %s" % (e)
@@ -178,6 +180,7 @@ def getSeperateFieldFromJson(jsonString):
         insertDict['aka'] = u'￥'.join(insertDict['aka']).encode('utf-8').strip()
         insertDict['user_tags'] = ''
         insertDict['others_like'] = ''
+        insertDict['adjs'] = ''
 
         '''
         print insertDict['max']

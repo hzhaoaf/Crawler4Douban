@@ -47,25 +47,25 @@ insertStringWithAllStringValues = (
 
 #print insertStringWithAllStringValues
 
-def insertShortCommentsToMysql(jsonString, databaseCursor):
+def insertShortCommentsToMysql(jsonString, databaseCursor, subjectID):
     try:
         # Get seperate fields of JSON
-        insertValues = getSeperateFieldFromJson(jsonString)
+        insertValues = getSeperateFieldFromJson(jsonString, subjectID)
 
         #print type(insertValues)
         #print insertValues
 
+        print 'Now inserting short comments...'
         affectedRows = databaseCursor.executemany(insertStringWithAllStringValues, insertValues)
+        print 'Done!'
 
     except Exception as e:
         print "Database Error: %s" % (e)
 
-def getSeperateFieldFromJson(jsonString, subjectID):
+def getSeperateFieldFromJson(jsonString, movie_subject_id):
     try:
         #print 'Now extracting seperate fields...'
         jsonKeys = jsonString.keys()
-
-        movie_subject_id = subjectID
 
         insertDict = {}
         insertList = []

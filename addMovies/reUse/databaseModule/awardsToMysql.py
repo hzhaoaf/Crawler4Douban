@@ -36,20 +36,22 @@ insertStringWithAllStringValues = (
 
 #print insertStringWithAllStringValues
 
-def insertMovieAwardsToMysql(jsonString, databaseCursor):
+def insertMovieAwardsToMysql(jsonString, databaseCursor, subjectID):
     try:
         # Get seperate fields of JSON
-        insertValues = getSeperateFieldFromJson(jsonString)
+        insertValues = getSeperateFieldFromJson(jsonString, subjectID)
 
         #print type(insertValues)
         #print insertValues
 
+        print 'Now inserting awards info...'
         affectedRows = databaseCursor.executemany(insertStringWithAllStringValues, insertValues)
+        print 'Done!'
 
     except Exception as e:
         print "Database Error: %s" % (e)
 
-def getSeperateFieldFromJson(jsonString):
+def getSeperateFieldFromJson(jsonString, subjectID):
     try:
         #print 'Now extracting seperate fields...'
         jsonKeys = jsonString.keys()
@@ -59,39 +61,31 @@ def getSeperateFieldFromJson(jsonString):
         for jsonKey in jsonKeys:
             print jsonKey
             print jsonString[jsonKey]
+            print type(jsonString[jsonKey])
         '''
 
         insertDict = {}
         insertList = []
 
-        for jsonKey in jsonKeys:
-            fieldValue = jsonString[jsonKey]
-            fieldValue = json.loads(fieldValue)
-            #print type(fieldValue)
-            if  hasattr(fieldValue, 'keys'):
-                subKeys = fieldValue.keys()
-                for subKey in subKeys:
-                    #print subKey
-                    insertDict[subKey] = fieldValue[subKey]
-                    #print insertDict[subKey]
-            else:
-                #print jsonKey
-                insertDict[jsonKey] = fieldValue
-
+        if 'awards_items' in jsonKeys:
             #print type(insertDict['award_items'])
-            insertDict['award_items'] = str(insertDict['award_items'])
+            insertDict['award_items'] = json.dumps(insertDict['award_items'])
+        else:
+            insertDict['award_items'] = ''
 
-            insertTuple = (insertDict['subject_id'], insertDict['movie_name'], insertDict['award_items'])
+        insertDict['movie_name'] = jsonString['movie_name']
+        insertDict['subject_id'] = subjectID
 
-            #print insertTuple
+        insertTuple = (insertDict['subject_id'], insertDict['movie_name'], insertDict['award_items'])
 
-            insertList.append(insertTuple)
+        #print insertTuple
+
+        insertList.append(insertTuple)
 
         return insertList
+
     except Exception as e:
-        print "Exception occured!"
-        print type(e)
-        print e.args
+        print "Error: %s" % (e)
 
 
 def getJsonStringFromJsonFile(jsonFileName):

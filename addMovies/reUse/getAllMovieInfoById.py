@@ -10,17 +10,25 @@ import socket
 import cookielib
 import os
 import sys
+import MySQLdb as mdb
 
 # import all user scripts
 from crawlerModule import basicInfoCrawler
 from crawlerModule import detailsCrawler
 from crawlerModule import shortCommentsCrawler
 from crawlerModule import awardsCrawler
+
 from parserModule import awardsParser
 from parserModule import userTagsParser
 from parserModule import othersLikeParser
 from parserModule import shortCommentsCountParser
 from parserModule import shortCommentsParser
+
+from databaseModule import basicInfoToMysql
+from databaseModule import userTagsToMysql
+from databaseModule import othersLikeToMysql
+from databaseModule import shortCommentsToMysql
+from databaseModule import awardsToMysql
 
 timeout = 60
 socket.setdefaulttimeout(timeout)
@@ -33,6 +41,8 @@ fileMode = 'w+'
 def getAllMovieInfoBySubjectID(subjectID):
     try:
         # Some constants of file and directory names
+        dir_prefix = '~/OpenData/movie_items/itemsByID/'
+
         basic_json = 'basic.json'
         details_html = 'details_html.html'
         awards_html = 'awards_html.html'
@@ -43,18 +53,23 @@ def getAllMovieInfoBySubjectID(subjectID):
         awards_json = 'awards.json'
 
         # Make a directory for each subject
-        if not os.path.isdir(subjectID):
-            os.mkdir(subjectID)
+        if not os.path.isdir(dir_prefix):
+            print 'Will create directory %s' % (dir_prefix)
+            os.makedirs(dir_prefix)
 
-        shortComment_htmls_dir = subjectID + '/' + shortComment_htmls_dir
+        if not os.path.isdir(dir_prefix + subjectID):
+            print 'Will create directory %s' % (dir_prefix + subjectID)
+            os.mkdir(dir_prefix + subjectID)
 
-        basic_json = subjectID + '/' + basic_json
-        details_html = subjectID + '/' + details_html
-        awards_html = subjectID + '/' + awards_html
-        userTags_json = subjectID + '/' + userTags_json
-        othersLike_json = subjectID + '/' + othersLike_json
-        shortComments_json = subjectID + '/' + shortComments_json
-        awards_json = subjectID + '/' + awards_json
+        shortComment_htmls_dir = dir_prefix + subjectID + '/' + shortComment_htmls_dir
+
+        basic_json = dir_prefix + subjectID + '/' + basic_json
+        details_html = dir_prefix + subjectID + '/' + details_html
+        awards_html = dir_prefix + subjectID + '/' + awards_html
+        userTags_json = dir_prefix + subjectID + '/' + userTags_json
+        othersLike_json = dir_prefix + subjectID + '/' + othersLike_json
+        shortComments_json = dir_prefix + subjectID + '/' + shortComments_json
+        awards_json = dir_prefix + subjectID + '/' + awards_json
 
         # Go, boy, Go
         print 'Now trying to construct movie info for ID %s...' % (subjectID)
@@ -64,7 +79,7 @@ def getAllMovieInfoBySubjectID(subjectID):
         '''
         if os.path.exists(basic_json) == False:
             print 'Getting movie basic info for ID %s...' % (subjectID)
-            basicInfo = getBasicMovieInfo.getBasicMovieInfoBySubjectID(subjectID)
+            basicInfo = basicInfoCrawler.getBasicMovieInfoBySubjectID(subjectID)
             if basicInfo == None:
                 print 'Movie item %s does not exist and will exit.' % (subjectID)
                 return
@@ -179,6 +194,36 @@ def getAllMovieInfoBySubjectID(subjectID):
         # Good Boy
         print 'Construction complete for %s!' % (subjectID)
 
+        print 'Echo the movie info...'
+
+        print 'Basic information:'
+        print type(basicInfo)
+        print type(eval(basicInfo))
+        print basicInfo
+
+        print 'User tags:'
+        print type(userTags)
+        print type(eval(userTags))
+        print userTags
+
+        print 'Others like:'
+        print type(othersLike)
+        print type(eval(othersLike))
+        print othersLike
+
+        print 'Short comments:'
+        print type(shortComments)
+        print type(eval(shortComments))
+        print shortComments
+
+        print 'Awards Info:'
+        print type(awardsInfo)
+        print type(eval(awardsInfo))
+        print awardsInfo
+
+
+        return subjectID, eval(basicInfo), eval(userTags), eval(othersLike), eval(shortComments), eval(awardsInfo)
+
     except urllib2.HTTPError as e:
         if hasattr(e, 'code'):
             print 'HTTP Error code for subject ID %s: %s' % (subjectID, e.code)
@@ -192,11 +237,77 @@ def getAllMovieInfoBySubjectID(subjectID):
     except Exception as e:
         print 'Excption occured: %s' % (e)
 
-def insertMovieInfoToMysql(basicInfo, userTags, othersLike, shortComments, awardsInfo):
-    pass
+# Database Section
+
+hostName = 'localhost'
+userName = 'lihang'
+userPassword = 'lilihang'
+databaseName = 'douban_movies_v1'
+
+basicInfoTableName = 'movie_items'
+
+def initDB(hostName, userName, userPassword, databaseName):
+    try:
+        print 'Trying to get database connection...'
+
+        con = mdb.connect(hostName, userName, userPassword, databaseName)
+
+        # Codec settings
+        con.set_character_set('utf8')
+
+        cur = con.cursor()
+
+        # Again with the codecs
+        cur.execute('SET NAMES utf8')
+        cur.execute('SET CHARACTER SET utf8')
+        cur.execute('SET character_set_connection=utf8')
+
+        print 'Got a database cursor successfully!'
+
+        print 'Creating database tables...'
+        cur.execute(basicInfoToMysql.create_movie_items_table)
+        cur.execute(shortCommentsToMysql.create_short_comments_table)
+        cur.execute(awardsToMysql.create_movie_awards_table)
+        print 'Done!'
+
+        return con, cur
+
+    except Exception as e:
+        print 'Excption occured: %s' % (e)
+
+def closeDB(databaseConnection, databaseCursor):
+    try:
+        print 'Now Closing database connection...'
+
+        databaseCursor.close()
+        databaseConnection.close()
+
+        print 'Database closed successfully!'
+
+    except Exception as e:
+        print "Error when closing database: %s" % (e)
+
+
+def insertMovieInfoToMysql(subjectID, basicInfo, userTags, othersLike, shortComments, awardsInfo):
+    print 'Trying to insert movie info into database...'
+
+    databaseConnection, databaseCursor = initDB(hostName, userName, userPassword, databaseName)
+
+    basicInfoToMysql.insertBasicInfoToMysql(basicInfo, databaseCursor)
+    userTagsToMysql.insertUserTagsToMysql(userTags, databaseCursor, subjectID)
+    othersLikeToMysql.insertOthersLikeToMysql(othersLike, databaseCursor, subjectID)
+    shortCommentsToMysql.insertShortCommentsToMysql(shortComments, databaseCursor)
+    awardsToMysql.insertMovieAwardsToMysql(awardsInfo, databaseCursor)
+
+    databaseConnection.commit()
+
+    closeDB(databaseConnection, databaseCursor)
+
+    print 'Done with the database operations!'
 
 if len(sys.argv) != 2:
     print 'Usage: getAllMovieInfoById.py subjectID'
 
 if len(sys.argv) == 2:
-    getAllMovieInfoBySubjectID(sys.argv[1])
+    subjectID, basicInfo, userTags, othersLike, shortComments, awardsInfo = getAllMovieInfoBySubjectID(sys.argv[1])
+    insertMovieInfoToMysql(subjectID, basicInfo, userTags, othersLike, shortComments, awardsInfo)

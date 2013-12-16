@@ -197,10 +197,10 @@ if __name__ == '__main__':
     newLineToken = '\n'
 
     tableName = 'short_comments'
-    hostName = 'localhost'
-    userName = 'your_database_user_name_here'
-    userPassword = 'your_database_user_password_here'
-    databaseName = 'your_database_name_here'
+    hostName = 'your_host_name' # Typically use 'localhost'
+    userName = 'your_user_name'
+    userPassword = 'your_user_password'
+    databaseName = 'your_database_name'
 
     numberOfJsonFiles = 0
     processedFiles = 0

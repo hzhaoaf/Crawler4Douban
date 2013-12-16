@@ -41,17 +41,21 @@ def search(request):
 
         retObj = {}
 
-        if start+count < ansCount:
+        #从lucene的返回结果中得到 start:start+count 的数据
+        if start+count < ansCount: #足够
             retObj['count'] = count
             retObj['start'] = start
             retObj['total'] = ansCount
+            retObj['status'] = 1  # 1 means searching succeed
             retObj['subjects'] = retList[start:start+count]
-        elif start < ansCount:
+        elif start < ansCount: #不够所要求的数目
             retObj['count'] = ansCount-start
             retObj['start'] = start
             retObj['total'] = ansCount
+            retObj['status'] = 2  # 0 means searching failed
             retObj['subjects'] = retList[start:ansCount]
-        else:
+        else: #错误
+            retObj['status'] = 0  # 0 means searching failed
             retObj['count'] = '老纪你看清楚，总共才'+str(ansCount)+'个！'
         
         retJson = retObj

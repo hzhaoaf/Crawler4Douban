@@ -143,7 +143,7 @@ def getSeperateFieldFromJson(jsonFileName, jsonString):
                 insertDict[jsonKey] = fieldValue
 
             #print type(insertDict['award_items'])
-            insertDict['award_items'] = str(insertDict['award_items'])
+            insertDict['award_items'] = json.dumps((insertDict['award_items']))
 
             insertTuple = (insertDict['subject_id'], insertDict['movie_name'], insertDict['award_items'])
 

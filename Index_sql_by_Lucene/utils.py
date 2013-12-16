@@ -17,7 +17,7 @@ import operator
 
 
 def simlifyRetDict(retDict):
-	reservedList = ['subject_id','title','directors','summary','image_small','score','boost']
+	reservedList = ['subject_id','title','directors','summary','image_small','rating_average','collect_count','user_tags','countries','score','boost']
 	keyList = retDict.keys()
 	for eachKey in keyList:
 		if eachKey not in reservedList:
@@ -136,8 +136,9 @@ def formatYear(yearStr):
 
 
 def scoreDocs2dictList(scoreDocs,searcher):
+	#usage:将scoreDoc的转换成dict list的结构
 	movieDictList = []
-	_pointer = 0
+	_pointer = 0 #iterator
 	for scoreDoc in scoreDocs:
 		movieDictList.append({})
 		score = scoreDoc.score

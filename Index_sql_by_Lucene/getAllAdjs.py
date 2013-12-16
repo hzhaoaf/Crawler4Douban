@@ -1,5 +1,13 @@
 #!usr/bin/bash
 #coding:utf-8
+#usage:将所有comments和summary分词，并将已抽取出来adj的和为抽取出adj的分别放入fenciAdj和fenciDataRaw
+#运行之后查看write_err_raw.txt 记录写入raw的错误的id
+#运行之后查看fenci_err_raw.txt 记录分词的错误的id
+
+# 1.首先分词得到分词之后的文件以及挑选出形容词的文件
+# 2.对形容词文件进行索引 indexAdjFiles
+# 3.统计 countTerms_adj
+# 4.选择前几名 getTopAdj
 
 import MySQLdb as mdb
 from sqlConstants import *
@@ -80,8 +88,8 @@ def restart_program():
     os.execl(python, python, * sys.argv)
 
 
-#---pyNLPIR---
-PyNLPIR.nlpir_init('.', 'UTF-8')
+
+
 
 
 #---------config here----
@@ -89,9 +97,16 @@ baseDir = '/home/rio/workspace/lucene/'
 dbName = 'moviedata'
 commentsDir = '/home/rio/workspace/commentsData/'
 
+userDictPath = baseDir + 'allCasts.txt'
+
 con = mdb.connect('localhost','root','testgce',dbName)
 #used for getting comments 
 con2 = mdb.connect('localhost','root','testgce',dbName)
+
+#---pyNLPIR---
+PyNLPIR.nlpir_init('.', 'UTF-8')
+#添加语料库
+PyNLPIR.nlpir_import_user_dict(userDictPath)
 
 with open(baseDir+'last.txt','r') as rec:
     last = int(rec.read())
@@ -121,9 +136,7 @@ with con:
         adjList = []
         count = 0
         #last = 4567
-        last_time = now() ###########
         for i in range(last,numrows):
-            all_start = now()############
 
             print 'index:'+str(i)
             print 'count:'+str(count)
@@ -138,8 +151,6 @@ with con:
                 if not os.path.isdir(adjDir):
                     os.mkdir(adjDir)
 
-            time_passed = now() - last_time ##########
-            print 'time_passed:' + str(time_passed)
             if 0:
                 print u"0.3秒后,程序将重启..."
                 #如果不关闭，会出现too many connections ！
@@ -150,7 +161,6 @@ with con:
 
            
 
-            get_start = now() #########
 
             cur.scroll(i,'absolute') #如果i是30,就从下一句fetchone将得到index为30的row
             row = cur.fetchone()
@@ -158,8 +168,10 @@ with con:
             #---1.get comments---
             comments = ''
             subject_id = row[SUBJECT_ID]
+            title = row[TITLE]
+            rating_average = row[RATING_AVERAGE]
+            comments_count = row[COMMENTS_COUNT]
             # print 'id:'+subject_id
-            sql_start = now()##########################
             # sql = "SELECT user_comment FROM short_comments WHERE subject_id = " + subject_id
             # cur2.execute(sql)
             # comments_num = int(cur2.rowcount)
@@ -176,8 +188,6 @@ with con:
 
 
 
-            sql_end = now() ##########################
-            sql_time = sql_end - sql_start
 
             #---2.get summary---
             summary = row[SUMMARY]
@@ -192,11 +202,7 @@ with con:
                     if eachTag_pair!='':  #开始或者结尾的'￥'可能分割之后会有空字符串
                         user_tags = user_tags + eachTag_pair.split(delim_uo)[0] #[0] 是真正的tag，[1]是一个人数
             
-            get_end = now() ###############
-            get_time = get_end - get_start
 
-
-            fenci_start = now()
 
             # ---fenci start---
             try:
@@ -215,21 +221,18 @@ with con:
 
                 if user_tags != '' and user_tags != None:
                     user_tags_gbk = utf8ToGbk(user_tags)
-                    #4568的时候出现短错误！！！！！！
-                    if i not in [4568,6471,21310,41248,42070,42524,70616,76265]:
+                    #出现段错误的index！！！！！！
+                    if i not in [4568,6471,9311,21310,41248,42070,42524,70616,76265]: #[4568,6471,21310,41248,42070,42524,70616,76265]:
                         user_tags_ = PyNLPIR.nlpir_paragraph_process(user_tags_gbk, True)
                 else:
                     user_tags_ = ''
             except:
-                with open(baseDir+'err.txt','a') as err:
-                    err.write(subject_id)
-            fenci_end = now()
-            fenci_time = fenci_end - fenci_start
+                with open(baseDir+'fenci_err.txt','a') as err:
+                    err.write(subject_id+'\n')
             
             #---fenci end---
 
             #---append to three list---
-            append_start = now() ########
             idList.append(subject_id)
 
             fenciDict = {}
@@ -244,16 +247,18 @@ with con:
             comments_adjs = getAdjs(comments_)
             summary_adjs = getAdjs(summary_)
             user_tags_adjs = getAdjs(user_tags_)
+
+
+            adjDict['title'] = title 
+            adjDict['rating_average'] = rating_average
+            adjDict['comments_count'] = comments_count
             adjDict['comments_adjs'] = comments_adjs 
             adjDict['summary_adjs']  = summary_adjs
             adjDict['user_tags_adjs'] = user_tags_adjs
             adjList.append(adjDict)
 
-            append_end = now()########
-            append_time = append_end - append_start
 
             #---write---
-            write_start = now()#############
             count  = count + 1
 
             NUM = 30
@@ -264,11 +269,24 @@ with con:
                 
                 for k in range(count):
                     with open(rawDir+'/' + idList[k]+'_res.json','w') as recFile:
-                        recFile.write(json.dumps(resList[k]))
+                        try:
+                            jsonStr = json.dumps(resList[k])
+                            recFile.write(jsonStr)
+                        except:
+                            with open(baseDir+ 'write_err_raw.txt','a') as f:
+                                f.write(subject_id+'\n')
                         recFile.close()
 
+
+
                     with open(adjDir+'/' + idList[k]+'_adj.json','w') as recFile2:
-                        recFile2.write(json.dumps(adjList[k]))
+                        jsonStr = json.dumps(adjList[k])
+                        recFile2.write(jsonStr)
+
+                        if jsonStr.find('title') < 0:
+                            print title
+                            print adjDict   
+                            exit()
                         recFile2.close()
 
                 count = 0
@@ -278,12 +296,10 @@ with con:
 
                 with open(baseDir+'last.txt','w') as rec:
                     rec.write(str(i))
-            write_end = now()##########
-            write_time = write_end - write_start
+
             #---write end ---
 
-            all_end = now()
-            all_time = all_end - all_start
+
             #print get_time,fenci_time,append_time,write_time,all_time
             #print sql_time
 

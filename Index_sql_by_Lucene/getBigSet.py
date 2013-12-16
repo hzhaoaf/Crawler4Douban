@@ -58,11 +58,13 @@ with con:
             #allSetsDict[fields_name_list[SUBJECT_ID]].add(row[SUBJECT_ID])
             
             #牢记这个set的union方法是不改变原始的set对象的！！！            
-            allSetsDict[fields_name_list[GENRES]    ] = allSetsDict[fields_name_list[GENRES]    ].union(set(row[GENRES   ].split(delim)))
             allSetsDict[fields_name_list[CASTS]     ] = allSetsDict[fields_name_list[CASTS]     ].union(set(row[CASTS    ].split(delim)))
+            allSetsDict[fields_name_list[DIRECTORS] ] = allSetsDict[fields_name_list[DIRECTORS] ].union(set(row[DIRECTORS].split(delim)))
+
+            
+            allSetsDict[fields_name_list[GENRES]    ] = allSetsDict[fields_name_list[GENRES]    ].union(set(row[GENRES   ].split(delim)))
             #allSetsDict[fields_name_list[AKA]       ] = allSetsDict[fields_name_list[AKA]       ].union(set(row[AKA      ].split(delim)))
             allSetsDict[fields_name_list[COUNTRIES] ] = allSetsDict[fields_name_list[COUNTRIES] ].union(set(row[COUNTRIES].split(delim)))
-            allSetsDict[fields_name_list[DIRECTORS] ] = allSetsDict[fields_name_list[DIRECTORS] ].union(set(row[DIRECTORS].split(delim)))
 
 
             
@@ -76,11 +78,11 @@ with con:
                         user_tags_set.add(eachTag_pair.split(delim_uo)[0]) #[0] 是真正的tag，[1]是一个人数
                 allSetsDict[fields_name_list[USER_TAGS] ] = allSetsDict[fields_name_list[USER_TAGS] ].union(user_tags_set)
             
-
             #others like 不用存储
 
             allSetsDict[fields_name_list[SUBTYPE]   ].union(set(row[SUBTYPE  ].split(delim)))
 
+            #for debug
             if i==100:
                 print i 
                 # print row[COUNTRIES]
@@ -97,7 +99,7 @@ with con:
 
                 with open('./allSetsDict.txt','w') as recFile:
                     printDict(allSetsDict,recFile)
-
+#最后一次写入
 with open('./allSetsDict.txt','w') as recFile:
     printDict(allSetsDict,recFile)
     #recFile.write(str(allSetsDict))

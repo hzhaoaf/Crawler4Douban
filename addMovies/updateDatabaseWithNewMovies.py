@@ -2,5 +2,5 @@
 # -*- coding:utf-8 -*-
 
 '''
-Script for adding new movies crawled from Douban to Mysql regularly using cron
+Script for adding new movies crawled from Douban to Mysql regularly using cron and getMovieInfoByIdWrapper.py
 '''

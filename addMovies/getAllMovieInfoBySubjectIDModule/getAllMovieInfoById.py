@@ -266,10 +266,10 @@ def getAllMovieInfoBySubjectID(subjectID):
 
 # Database Section
 
-hostName = 'localhost'
-userName = 'lihang'
-userPassword = 'lilihang'
-databaseName = 'douban_movies_v1'
+hostName = 'your_host_name'
+userName = 'your_database_user_name'
+userPassword = 'your_database_password'
+databaseName = 'your_database_name'
 
 basicInfoTableName = 'movie_items'
 
@@ -332,9 +332,11 @@ def insertMovieInfoToMysql(subjectID, basicInfo, userTags, othersLike, shortComm
 
     print 'Done with the database operations!'
 
+'''
 if len(sys.argv) != 2:
     print 'Usage: getAllMovieInfoById.py subjectID'
 
 if len(sys.argv) == 2:
     subjectID, basicInfo, userTags, othersLike, shortComments, awardsInfo = getAllMovieInfoBySubjectID(sys.argv[1])
     insertMovieInfoToMysql(subjectID, basicInfo, userTags, othersLike, shortComments, awardsInfo)
+'''

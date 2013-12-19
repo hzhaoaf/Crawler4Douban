@@ -1,4 +1,4 @@
-#!usr/bin/bash
+#!usr/bin/python 
 #coding:utf-8
 
 RATING_MAX          =0  

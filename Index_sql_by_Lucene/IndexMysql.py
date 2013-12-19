@@ -88,6 +88,7 @@ def CreateAWrapper():
         analyzerPerField.put('directors', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
         analyzerPerField.put('user_tags', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
         analyzerPerField.put('others_like', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('adjs', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
 
         #analyzerPerField.put('douban_site', StandardAnalyzer(Version.LUCENE_CURRENT))注释起来的都是没必要分析的
         #analyzerPerField.put('image_small', StandardAnalyzer(Version.LUCENE_CURRENT))
@@ -105,6 +106,7 @@ def CreateAWrapper():
         #analyzerPerField.put('comments_count', StandardAnalyzer(Version.LUCENE_CURRENT))
         #analyzerPerField.put('ratings_count', StandardAnalyzer(Version.LUCENE_CURRENT))
 
+        #!欢叔将QueryParser弄好之后就可以改成 WhiteSpace的
         aWapper = PerFieldAnalyzerWrapper(SmartChineseAnalyzer(Version.LUCENE_CURRENT),analyzerPerField)
 
         return aWapper
@@ -121,12 +123,14 @@ class IndexMySql(object):
         aWrapper = LimitTokenCountAnalyzer(aWrapper, 1048576)
         bm25Sim = BM25Similarity(2.0,0.75) #BM25 with these default values: k1 = 1.2, b = 0.75.
         config = IndexWriterConfig(Version.LUCENE_CURRENT, aWrapper)
+        #使用BM25算法，如果不需要就去掉这句即可
         config.setSimilarity(bm25Sim)
         config.setOpenMode(IndexWriterConfig.OpenMode.CREATE)
         writer = IndexWriter(store, config)
 
-
+        #start
         self.indexTable(writer)
+
         ticker = Ticker()
         print 'commit index'
         threading.Thread(target=ticker.run).start()
@@ -141,7 +145,7 @@ class IndexMySql(object):
         con = None
 
         #define the index of all the fields
-        #---------step 2----------
+        #---------step 2：connect to mysql----------
         con = mdb.connect('localhost','root','testgce','moviedata')
 
         #t_num = FieldType.NumericType it is wrong!!
@@ -167,6 +171,7 @@ class IndexMySql(object):
         t3.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS)
 
         maxDict = utils.maxDict
+        #加权数值范围
         base = DOC_BOOST_RANGE[0]
         upper = DOC_BOOST_RANGE[1]
 
@@ -180,7 +185,7 @@ class IndexMySql(object):
             cur.execute('SET CHARACTER SET utf8;')
             cur.execute('SET character_set_connection=utf8;')
             
-            #------step 3------
+            #------step 3： choose the right table------
             cur.execute("SELECT * FROM movie_items")
 
             numrows = int(cur.rowcount)
@@ -188,7 +193,7 @@ class IndexMySql(object):
             for i in range(numrows):
                 row = cur.fetchone()
 
-                #------step 4------
+                #------step 4：Index your field------
                 summary = row[SUMMARY]  
                 subject_id = row[SUBJECT_ID]
 
@@ -302,6 +307,7 @@ class IndexMySql(object):
                             others_like_str = others_like_str +' '+like_pair.split(delim_uo)[1]
 
 
+                #start process adjs
                 if row[ADJS] != None:
                     doc.add(StringField("raw_adjs",row[ADJS],Field.Store.YES))
 
@@ -329,10 +335,6 @@ class IndexMySql(object):
                     f = Field("adjs", adjs_str, t3)
                     f.setBoost(boost)
                     doc.add(f)
-
-
-
-                    print adjs_str
 
                 f = Field("user_tags", user_tags_str, t3)
                 f.setBoost(boost)
@@ -374,11 +376,13 @@ class IndexMySql(object):
                     print "warning:\n" + subject_id +'---> No content!'
                 print 'boosting:' + str(boost)
 
+                #for debug
                 if boost>upper:
                     print boostProb
                     print maxDict
                     
                     exit(0)
+
                 writer.addDocument(doc)
 
 
@@ -398,6 +402,4 @@ if __name__ == '__main__':
     IndexMySql(os.path.join(base_dir, INDEX_DIR), aWrapper)
     end = datetime.now()
     print end - start
-    #except Exception, e:
-    #    print "Failed: ", e
-    #    raise e
+

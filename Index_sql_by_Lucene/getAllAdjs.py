@@ -1,4 +1,4 @@
-#!usr/bin/bash
+#!usr/bin/python 
 #coding:utf-8
 #usage:将所有comments和summary分词，并将已抽取出来adj的和为抽取出adj的分别放入fenciAdj和fenciDataRaw
 #运行之后查看write_err_raw.txt 记录写入raw的错误的id

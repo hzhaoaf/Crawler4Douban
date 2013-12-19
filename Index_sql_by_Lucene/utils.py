@@ -414,6 +414,28 @@ def getTagValueInRawTags(raw_user_tags,tag):
 	else:
 		return False
 
+def getAdjValueInRawAdjs(raw_adjs,adj):
+	#usage: return a num of adj in raw_user_tags in the type of list
+	offset = raw_adjs.find(adj)
+	if  offset >= 0: #说明 含有 adj字串
+		offset = offset + len(adj) #get to the end position of the next adj
+		start = offset 
+
+		#这一块是叫 offset 往前走，有两种可能停下来 1.遇到',' 2.到结尾
+		while offset<len(raw_adjs):
+			#往前走，知道遇见一个 ','
+			if raw_adjs[offset] != u',':
+				offset = offset + 1
+			else:
+				break
+		num_ = raw_adjs[start:offset] #it's like '=12.0'
+		adj_num = int(float(num_[1:])) #get rid of the '='
+		if adj_num == 0:
+			exit('error when analyzing the raw_adjs')
+		return adj_num
+	else:
+		return False
+
 
 def reRank(movieDictList,maxDict,command=None,rankFlag = None):
 	#reRank的最核心的意义在于将command 信息融入，可以弥补一些缺陷比如 user_tags后的人数对加权的作用有限
@@ -426,12 +448,23 @@ def reRank(movieDictList,maxDict,command=None,rankFlag = None):
 
 		#process tags
 		tag_list = getFieldValueInCommand(command,'user_tags')
-		if tag_list: #exist
+		if tag_list: #exist,说明用户搜索了该域
 			for eachTag in tag_list: #再raw中搜索每个再command中出现的tag
 				raw_tags = eachDict['raw_user_tags']
 				tag_num = getTagValueInRawTags(raw_tags,eachTag)
 				if tag_num:
 					times = times*(1 + tag_num*TAG_NUM_FACTOR) #0.0001 now
+
+		#process adjs
+		adj_list = getFieldValueInCommand(command,'adjs')
+		if adj_list:
+			for eachAdj in adj_list:
+				raw_adjs = eachDict['raw_adjs']
+				adj_num = getAdjValueInRawAdjs(raw_adjs,eachAdj)
+				# if adj_num:
+					# times = times*(1+adj_num*ADJ_NUM_FACTOR)
+
+
 
 		boost = boost * times
 		eachDict['score'] = eachDict['score']*boost
@@ -446,6 +479,9 @@ def reRank(movieDictList,maxDict,command=None,rankFlag = None):
 
 
 
+#debug area 
+
+#print getAdjValueInRawAdjs('哈哈=23,呵呵=90','哈哈')
 
 
 		

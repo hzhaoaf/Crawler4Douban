@@ -3,6 +3,7 @@
 #usage:将所有comments和summary分词，并将已抽取出来adj的和为抽取出adj的分别放入fenciAdj和fenciDataRaw
 #运行之后查看write_err_raw.txt 记录写入raw的错误的id
 #运行之后查看fenci_err_raw.txt 记录分词的错误的id
+#summary等域使用的是数据库中的数据，comments域在数据库中读取过慢，直接使用的json文本
 
 # 1.首先分词得到分词之后的文件以及挑选出形容词的文件
 # 2.对形容词文件进行索引 indexAdjFiles
@@ -180,7 +181,7 @@ with con:
             #     row2 = cur2.fetchone()
             #     comments = comments + ' ' + row2[0] # user_comment
             jsonPath = commentsDir+subject_id+'.json' 
-            if os.path.exists(jsonPath):
+            if os.path.exists(jsonPath): #数据库如果比较新，会有一些电影在comments中没有
                 with open(jsonPath,'r') as commentsJson:
                     commDict =  json.loads(commentsJson.read())
                 for eachKey in commDict:

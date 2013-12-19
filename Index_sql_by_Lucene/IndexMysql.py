@@ -287,26 +287,52 @@ class IndexMySql(object):
                             tag_num_processed = int(int(tag_num)/SPAN)+1
                             #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                             user_tags_str = user_tags_str +' '+ tag_name * tag_num_processed
-                            tags_len = tags_len + tag_num_processed
-                # if row[SUBJECT_ID] == '10583098':
-                #     print user_tags_list
-                #     print tag_pair
-                #     print user_tags_str
-                #     exit()
+                            tags_len = tags_len + tag_num_processed #最后得到总共词的个数
+
 
                 if tags_len<TAGS_AVER_LEN:
                     #填充tags，目测3是平均长度
                     user_tags_str = user_tags_str +' ￥￥￥'*(TAGS_AVER_LEN - tags_len)
-                #else:
-                #    print user_tags_str
+                #
+
+
                 if row[OTHERS_LIKE]!='':
                     for like_pair in row[OTHERS_LIKE].split(delim):
                         if like_pair!='':
                             others_like_str = others_like_str +' '+like_pair.split(delim_uo)[1]
 
-                # print user_tags_str
-                # print others_like_str
 
+                if row[ADJS] != None:
+                    doc.add(StringField("raw_adjs",row[ADJS],Field.Store.YES))
+
+                    adjs_str = ''
+                    adjs_len = 0
+                    if row[ADJS] != '':
+                        #'重要=4.0,特殊=4.0'
+                        adjs_str = row[ADJS]
+                        adjs_list = adjs_str.split(',')
+                        for adj_pair in adjs_list:
+                            adj_name = adj_pair.split('=')[0]
+                            adj_num = adj_pair.split('=')[1] 
+                            if adj_pair.split('=')[1][-1] == '\n':
+                                adj_num = adj_num[0:-1]
+                            adj_num = int(float(adj_num))
+                            adjs_str = adjs_str + ' ' + adj_name * adj_num
+                            adjs_len = adjs_len + adj_num #最后得到总共tags的个数
+
+
+
+                    if adjs_len<ADJS_AVER_LEN:
+                        #填充tags，目测3是平均长度
+                        adjs_str = adjs_str +' ￥￥￥'*(ADJS_AVER_LEN - adjs_len)
+
+                    f = Field("adjs", adjs_str, t3)
+                    f.setBoost(boost)
+                    doc.add(f)
+
+
+
+                    print adjs_str
 
                 f = Field("user_tags", user_tags_str, t3)
                 f.setBoost(boost)
@@ -315,6 +341,8 @@ class IndexMySql(object):
                 f = Field("others_like", others_like_str, t3)
                 f.setBoost(boost)
                 doc.add(f)
+
+
 
                 #fields which should be analyzed with good analyzer
                 f = Field("title", row[TITLE], t3)                

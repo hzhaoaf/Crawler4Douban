@@ -62,8 +62,9 @@ with con:
             allSetsDict[fields_name_list[DIRECTORS] ] = allSetsDict[fields_name_list[DIRECTORS] ].union(set(row[DIRECTORS].split(delim)))
 
             
+            allSetsDict[fields_name_list[TITLE]     ] = allSetsDict[fields_name_list[TITLE]     ].union(set(row[TITLE   ].split(delim)))
             allSetsDict[fields_name_list[GENRES]    ] = allSetsDict[fields_name_list[GENRES]    ].union(set(row[GENRES   ].split(delim)))
-            #allSetsDict[fields_name_list[AKA]       ] = allSetsDict[fields_name_list[AKA]       ].union(set(row[AKA      ].split(delim)))
+            allSetsDict[fields_name_list[AKA]       ] = allSetsDict[fields_name_list[AKA]       ].union(set(row[AKA      ].split(delim)))
             allSetsDict[fields_name_list[COUNTRIES] ] = allSetsDict[fields_name_list[COUNTRIES] ].union(set(row[COUNTRIES].split(delim)))
 
 

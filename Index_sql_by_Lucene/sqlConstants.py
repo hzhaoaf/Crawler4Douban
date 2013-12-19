@@ -35,6 +35,7 @@ RATINGS_COUNT       =30 #31 多少人打分
 AKA                 =31 #32
 USER_TAGS  		    =32 #31
 OTHERS_LIKE         =33 #32
+ADJS                =34 #33
 
 
 fields_name_list = \
@@ -87,7 +88,9 @@ delim_uo = '<>'
 TAGS_NUM = 20
 SPAN = 500
 TAGS_AVER_LEN = 100
+ADJS_AVER_LEN = 20
 TAG_NUM_FACTOR = 0.0001 #so a tag marked by 16000 people will get a times of 1.6
+ADJ_NUM_FACTOR = 0.1 # so a adj with a number of 16 will get a times of 1.6
 
 ADJ_NUM = 5
 SUMMARY_ADJ_BOOST = 4

@@ -157,8 +157,7 @@ def run(command,searcher, aWrapper):
 
     maxDict = utils.maxDict
     movieDictList =  utils.scoreDocs2dictList(scoreDocs,searcher)
-    # for each in movieDictList:
-    #     print each['score']
+
     retList = movieDictList
     retList = utils.reRank(movieDictList,maxDict,command)
 
@@ -176,15 +175,6 @@ def printResult(retList):
     #print retList[0]['title'].encode('utf-8')
     for each in retList:
         print each['subject_id'] + ':' +each['title'] + 'boost->'+ str(each['boost'])+'|| score:'+str(each['score'])+'['+str(each['year'])+']'
-        #print each['subject_id'] + ':' +each['title'] + 'boost->'+ str(each['boost'])+'|| score:'+str(each['score']) + ' ^'+each['user_tags']+'\n'
-
-
-
-
-
-
-
-
 
 
 if __name__ == '__main__':

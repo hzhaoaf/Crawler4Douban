@@ -61,9 +61,7 @@ class Ticker(object):
             time.sleep(1.0)
 
 def CreateAWrapper():
-
-        # Map<String,Analyzer> analyzerPerField = new HashMap<String,Analyzer>();
-
+        #索引的时候使用该wrappe，到了搜索的时候还是使用该wrapper
 
         analyzerPerField = HashMap()
         #为所有的域设置不同的analyzer  

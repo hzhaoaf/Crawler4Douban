@@ -17,7 +17,7 @@ import operator
 
 
 def simlifyRetDict(retDict):
-	reservedList = ['subject_id','title','directors','year','summary','image_small','rating_average','collect_count','user_tags','countries','score','boost','adjs']
+	reservedList = ['subject_id','title','directors','year','summary','image_small','rating_average','collect_count','raw_user_tags','countries','score','boost','raw_adjs']
 	keyList = retDict.keys()
 	for eachKey in keyList:
 		if eachKey not in reservedList:
@@ -283,6 +283,7 @@ def f_ao(x):
 	a = 1-b
 	y = a*x*x + b*x
 	return y
+
 def insert2HistList(alist,pos):
 	#如果list已经够长
 	if len(alist)>pos:

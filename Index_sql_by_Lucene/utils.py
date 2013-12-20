@@ -17,7 +17,7 @@ import operator
 
 
 def simlifyRetDict(retDict):
-	reservedList = ['subject_id','title','directors','summary','image_small','rating_average','collect_count','user_tags','countries','score','boost']
+	reservedList = ['subject_id','title','directors','year','summary','image_small','rating_average','collect_count','user_tags','countries','score','boost','adjs']
 	keyList = retDict.keys()
 	for eachKey in keyList:
 		if eachKey not in reservedList:
@@ -154,13 +154,25 @@ def scoreDocs2dictList(scoreDocs,searcher):
 	return movieDictList
 		
 	
+def getLevel(num,numArea):
+	#usage:用于判断num是否在numArea中，如果不在，取上界或者下界
+	scope_len = numArea[1]-numArea[0]
+	if num < numArea[0]:
+		level = 0.0
+	elif num>numArea[1]:
+		level = 1.0
+	else:
+		level = (float(num) - numArea[0])/scope_len
+	return level
 
-def basicFeaturesOfMovie(doc_row,maxDict):
+
+
+def basicFeaturesOfMovie(doc_row,statisticDict,dateStr):
 	#usage: get a the impressive popularity and the other feature of a movie to reRank
 	# it should get all features needed in setBoost and reRank
 
 
-	#一个傻逼的函数重载。。。
+	#一个傻逼的函数重载,前者用在 sql 查询 后者用在 reRank
 	if isinstance(doc_row,tuple):
 		#ratings
 		rating_av = doc_row[RATING_AVERAGE] if doc_row[RATING_AVERAGE]is not None else 0
@@ -175,6 +187,10 @@ def basicFeaturesOfMovie(doc_row,maxDict):
 		#评论
 		comments_c = doc_row[COMMENTS_COUNT] if doc_row[COMMENTS_COUNT] is not None else 0
 		reviews_c = doc_row[REVIEWS_COUNT] if doc_row[REVIEWS_COUNT] is not None else 0
+
+		#时间
+		year = int(dateStr)
+
 	elif isinstance(doc_row,dict):
 		#ratings
 		rating_av = float(doc_row['rating_average']) if doc_row['rating_average']is not None else 0
@@ -190,41 +206,51 @@ def basicFeaturesOfMovie(doc_row,maxDict):
 		comments_c = int(doc_row['comments_count']) if doc_row['comments_count'] is not None else 0
 		reviews_c = int(doc_row['reviews_count']) if doc_row['reviews_count'] is not None else 0
 
+		#时间
+		year = int(dateStr)
+
+
 	#denorm
 	#rating_total_denorm #和下面的区别：所有 av×人数/max(av×人数) 和直接拿 avx人数/10×max(人数) 差不多
 	#rating_av_max = float(maxDict['rating_av_max'])
-	ratings_c_max  = float(maxDict['ratings_c_max'])
-	do_c_max = float(maxDict['do_c_max'])
-	wish_c_max =  float(maxDict['wish_c_max'])
-	collect_c_max = float(maxDict['collect_c_max'])
-	comments_c_max =  float(maxDict['comments_c_max'])
-	reviews_c_max =  float(maxDict['reviews_c_max'])
-	dcw_max = float(maxDict['dcw_max'])
-	tr_max = float(maxDict['tr_max'])
+	ratings_c_area  = statisticDict['ratings_c_area']
+	do_c_area = statisticDict['do_c_area']
+	wish_c_area =  statisticDict['wish_c_area']
+	collect_c_area = statisticDict['collect_c_area']
+	comments_c_area =  statisticDict['comments_c_area']
+	reviews_c_area =  statisticDict['reviews_c_area']
+	dcw_area = statisticDict['dcw_area']
+	tr_area = statisticDict['tr_area']
+
+	#process year
+	# yearList = 
 
 	#-----------------
 	#all need to return 
 
+
 	#normlization !!!
 	#越高越好，但是要在一定程度上避免 平均分比较低 但是 评分人数高的电影
 	#虽然有时候也需要这样
-	rating_total = (rating_av * ratings_c)/(10*ratings_c_max)
+	rating_total = 0 #(rating_av * ratings_c)/(10*ratings_c_max)
 	
 	#可以反映一个电影的受欢迎程度
-	popularity = (do_c + collect_c + wish_c)/dcw_max
+	dcw = do_c + collect_c + wish_c
+	popularity = getLevel(dcw,dcw_area)
 
 	#trends如果太小，那么就说明这个电影已经过气了,而如果wish_c比较多，则说明最近比较火. 注意这个值在normalize之前可能会大于1
 	#最近的火热程度
-	trends = (wish_c/(collect_c+do_c))/tr_max if collect_c != 0 else 0
+	trends = 0 #(wish_c/(collect_c+do_c))/tr_max if collect_c != 0 else 0
 
 	#观后感，反应影片的深刻程度 长评显然比短评更有意义
-	impressive = 0.2*comments_c/comments_c_max + 0.8*reviews_c/reviews_c_max
+	impressive = 0.2*getLevel(comments_c,comments_c_area) + 0.8*getLevel(reviews_c,reviews_c_area)
 
-
+	howNew = float(year-firstMovieTime)/(NOW-firstMovieTime)
+	print 'howNew' + str(howNew)
 	#是不是新电影，新的程度，越小越新
 	#new_degree = 20131231 - int(doc.get('year').replace('-',''))
 
-	return rating_av, rating_total, popularity, trends, impressive
+	return rating_av, rating_total, popularity, trends, impressive, howNew
 
 
 
@@ -257,6 +283,16 @@ def f_ao(x):
 	a = 1-b
 	y = a*x*x + b*x
 	return y
+def insert2HistList(alist,pos):
+	#如果list已经够长
+	if len(alist)>pos:
+		alist[pos] = alist[pos]+1
+	else:#不足补零
+		for i in range(len(alist),pos):
+			alist.append(0)
+		alist.append(1)
+	return True
+
 
 def getMax():
 	#usage: this script is used for getting the max, for normalization
@@ -276,6 +312,7 @@ def getMax():
 			cur.execute("SELECT * FROM movie_items")
 
 			maxDict = {}
+
 			maxDict['ratings_c_max'] = 0
 
 			maxDict['do_c_max'] = 0
@@ -286,6 +323,18 @@ def getMax():
 			maxDict['dcw_max'] =0
 			maxDict['tr_max'] =0
 			maxDict['prob_max'] = 0
+
+			histoDict = {}
+			histoDict['ratings_c_hist'] = []
+			histoDict['do_c_hist'] = []
+			histoDict['collect_c_hist']=[]
+			histoDict['wish_c_hist'] = []
+			histoDict['comments_c_hist']=[]
+			histoDict['reviews_c_hist'] =[]
+			histoDict['dcw_hist'] =[]
+			histoDict['tr_hist'] =[]
+			histoDict['prob_hist'] = []
+
 
 			ratings_c_max = 0
 			do_c_max = 0
@@ -313,7 +362,6 @@ def getMax():
 				tmp_dcw = tmp_dc+tmp_cc + tmp_wc
 				tmp_tr  = float(tmp_wc)/(tmp_cc+tmp_dc) if tmp_dc and tmp_cc ==0 else 0
 
-				#tmp_prob = 0.4*(tmp_rv)*0.3/10) + 0.4* + 0.15*popularity + 0.05*trends
 
 
 				ratings_c_max  = tmp_rc  if tmp_rc>ratings_c_max else ratings_c_max
@@ -325,6 +373,26 @@ def getMax():
 				dcw_max        = tmp_dcw if tmp_dcw>dcw_max else dcw_max
 				tr_max         = tmp_tr  if tmp_tr>tr_max else tr_max
 
+
+
+				histPos = int(tmp_rc/RATINGS_C_LIDU)
+				insert2HistList(histoDict['ratings_c_hist' ],histPos)
+				histPos = int(tmp_dc/DO_C_LIDU)
+				insert2HistList(histoDict['do_c_hist'      ],histPos)
+				histPos = int(tmp_cc/COLLECT_C_LIDU)
+				insert2HistList(histoDict['collect_c_hist' ],histPos)
+				histPos = int(tmp_wc/WISH_C_LIDU)
+				insert2HistList(histoDict['wish_c_hist'    ],histPos)
+				histPos = int(tmp_cmc/COMMENTS_C_LIDU)
+				insert2HistList(histoDict['comments_c_hist'],histPos)
+				histPos = int(tmp_rec/REVIEWS_C_LIDU)
+				insert2HistList(histoDict['reviews_c_hist' ],histPos)
+				histPos = int(tmp_dcw/DCW_LIDU)
+				insert2HistList(histoDict['dcw_hist'       ],histPos)
+				histPos = int(tmp_tr/TR_LIDU)
+				insert2HistList(histoDict['tr_hist'        ],histPos)
+
+
 			maxDict['ratings_c_max'] =  ratings_c_max
 			maxDict['do_c_max'] =  do_c_max
 			maxDict['collect_c_max']= collect_c_max
@@ -335,41 +403,62 @@ def getMax():
 			maxDict['tr_max'] = tr_max
 
 
+
 			print 'For the biggest! We made it! Finally !'
 
-			return maxDict
+			return maxDict,histoDict
 
 maxDict = {
-	'comments_c_max': 140283, 
-	'ratings_c_max': 470876, 
+	'comments_c_max': 140283,  #1000为1步
+	'ratings_c_max': 470876,  #1000为1步
 	'prob_max': 0, 
-	'do_c_max': 23873, 
-	'collect_c_max': 610043, 
-	'dcw_max': 671908, 
-	'tr_max': 77.0, 
-	'wish_c_max': 77535, 
-	'reviews_c_max': 5216
+	'do_c_max': 23873, #1000为1步
+	'collect_c_max': 610043, #1000为1步
+	'dcw_max': 671908, #1000为1步
+	'tr_max': 77.0, ##10为1步
+	'wish_c_max': 77535, #1000为1步 
+	'reviews_c_max': 5216  #100为1步
 }
 
-def calcBoostProb(doc_row,maxDict):
+statisticDict = {
+	#思考这样没有什么index的问题，应该是对的,从最简单的（0,1）可思考
+	'comments_c_area': (COMMENTS_C_LIDU*2.0,COMMENTS_C_LIDU*88.0),
+	'ratings_c_area': (RATINGS_C_LIDU*4.0,RATINGS_C_LIDU*486.0),
+	'prob_area':(0,0),
+	'do_c_area':(0,0),
+	'collect_c_area':(COLLECT_C_LIDU*6.0, COLLECT_C_LIDU*811.0) ,
+	'dcw_area': (DCW_LIDU*14.0, DCW_LIDU *1128.0),
+	'tr_area':(0, 0),
+	'wish_c_area':(WISH_C_LIDU*6.0,WISH_C_LIDU*310.0),
+	'reviews_c_area': (REVIEWS_C_LIDU*1.0,REVIEWS_C_LIDU*255.0) #这个255 是自己看的
 
-	rating_av, rating_total, popularity, trends, impressive = basicFeaturesOfMovie(doc_row,maxDict)
+}
+
+
+def calcBoostProb(doc_row,maxDict,dateStr):
+
+	rating_av, rating_total, popularity, trends, impressive , howNew = basicFeaturesOfMovie(doc_row,statisticDict,dateStr)
 	
 	#temp adjustment
-	rating_total = f_tu(rating_total)
-	impressive = f_tu(impressive)
+	rating_total = rating_total
+	impressive = impressive
 
 	#稀疏因子，因为rating_av/10 的结果相对数值比较大，而impressive的结果比较小
 	#一个好的加权，应该保证这几个维度上的数值都在差不多的范围
 	sparse = 0.3
+	#评分比较差的，就让它更差
+	if rating_av<7:
+		rating_av = float(rating_av) * 0.6
+	print rating_av
+	#!problem
+	print (rating_av/10)*sparse,impressive,popularity,howNew,trends
 	#it is a measure of whether a movie should be addBoost, =1 means it is a  totally good movie which should be boosted
-	boostProb = 0.4*((float(rating_av)/10)*sparse) + 0.4*impressive + 0.15*popularity + 0.05*trends
+	boostProb = 0.65*(rating_av/10) + (0.15*impressive + 0.1*popularity) +0.1*howNew
 
-	#print rating_total, impressive, popularity, trends
+	print rating_total, impressive, popularity, trends
+	# if boostProb>0.8:
+	# 	exit()
 	return boostProb
-
-
-
 
 def getFieldValueInCommand(command,field):
 	#usage: return a Value of field in command in the type of list
@@ -444,7 +533,7 @@ def reRank(movieDictList,maxDict,command=None,rankFlag = None):
 		boost = 1 # 初始boost
 		times = 1 # 倍数
 
-		rating_av, rating_total, popularity, trends, impressive = basicFeaturesOfMovie(eachDict,maxDict)
+		# rating_av, rating_total, popularity, trends, impressive,howNew = basicFeaturesOfMovie(eachDict,maxDict)
 
 		#process tags
 		tag_list = getFieldValueInCommand(command,'user_tags')
@@ -483,9 +572,20 @@ def reRank(movieDictList,maxDict,command=None,rankFlag = None):
 
 #print getAdjValueInRawAdjs('哈哈=23,呵呵=90','哈哈')
 
+# a = [1,5]
+# insert2HistList(a,5)
+# print a
 
-		
-		
+# import json 
+
+# maxDict,histoDict = getMax()
+# print maxDict
+# histoDictStr = json.dumps(histoDict)
+# with open('./statistic.txt','w') as f:
+# 	f.write(histoDictStr)
+
+
+
 
 
 

@@ -200,32 +200,24 @@ class IndexMySql(object):
 
                 print 'id'+subject_id
                 year = utils.formatYear(row[YEAR])
-                print year
                 try:
                     date = DateTools.stringToDate(year.replace('-',' '))
                     wtfFile = open('wtf.txt','a')
                     dateStr  = DateTools.dateToString(date,DateTools.Resolution.DAY)
                 except:
-                    #try:
                     wtfFile.write(year+'\n')
-                    #except:
-                    #    wtfFile.write('*************'+'\n')
+
                         
-
-
-
-                #calc the boost of doc
-                pass
-
 
                 doc = Document()
 
                 #boosting
-                boostProb = utils.calcBoostProb(row,maxDict)
+                boostProb = utils.calcBoostProb(row,maxDict,dateStr)
                 boost = base + boostProb*(upper-base)
 
                 doc.add(FloatField("boost",boost,Field.Store.YES))
                 doc.add(StringField("year",dateStr,Field.Store.YES))
+                print 'dateStr:'+dateStr
                 #A text field is a sequence of terms that has been tokenized while a string field is a single term (although it can also be multivalued.)
 
                 do_count = row[DO_COUNT] if row[DO_COUNT] != None else 0

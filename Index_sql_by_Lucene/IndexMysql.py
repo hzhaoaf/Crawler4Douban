@@ -85,7 +85,7 @@ def CreateAWrapper():
         analyzerPerField.put('subtype', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
         analyzerPerField.put('directors', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
         analyzerPerField.put('user_tags', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
-        analyzerPerField.put('others_like', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('others_like   ', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
         analyzerPerField.put('adjs', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
 
         #analyzerPerField.put('douban_site', StandardAnalyzer(Version.LUCENE_CURRENT))注释起来的都是没必要分析的
@@ -144,7 +144,7 @@ class IndexMySql(object):
 
         #define the index of all the fields
         #---------step 2：connect to mysql----------
-        con = mdb.connect('localhost','root','lhj75211314','douban_movie_v3')
+        con = mdb.connect('localhost','root','testgce','douban_movie_v3')
 
         #t_num = FieldType.NumericType it is wrong!!
         t_num = FieldType()

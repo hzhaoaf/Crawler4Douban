@@ -103,6 +103,8 @@ def run(command,searcher, aWrapper):
     #A PerFieldAnalyzerWrapper can be used like any other analyzer, for both indexing and query parsing. 
     query = parser.parse(command)
 
+    print query.toString()
+
     #test the analyzerWrapper
     #printTokens(aWrapper,command,'title')
     #printWrappedAnalyzer(aWrapper)

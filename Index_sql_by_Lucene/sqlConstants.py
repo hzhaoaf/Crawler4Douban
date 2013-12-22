@@ -96,7 +96,7 @@ ADJ_NUM = 5
 SUMMARY_ADJ_BOOST = 4
 
 #表示对doc的加权范围
-DOC_BOOST_RANGE = [1,8]
+DOC_BOOST_RANGE = [1,4]
 
 # for test 
 ID = 0

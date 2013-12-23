@@ -144,7 +144,7 @@ class IndexMySql(object):
 
         #define the index of all the fields
         #---------step 2：connect to mysql----------
-        con = mdb.connect('localhost','root','testgce','douban_movie_v3')
+        con = mdb.connect('localhost','root','lhj75211314','douban_movie_v3')
 
         #t_num = FieldType.NumericType it is wrong!!
         t_num = FieldType()

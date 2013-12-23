@@ -464,7 +464,7 @@ def calcBoostProb(doc_row,maxDict,dateStr):
 	#it is a measure of whether a movie should be addBoost, =1 means it is a  totally good movie which should be boosted
 	boostProb = 0.65*(rating_av/10) + (0.15*impressive + 0.1*popularity) +0.1*howNew
 
-	print 'rating_total:'+str(rating_total), 'impressive:'+str(impressive), 'popularity:'+str(popularity),'trends'+str(trends)
+	print 'rating_av:'+str(rating_av), 'impressive:'+str(impressive), 'popularity:'+str(popularity),'trends'+str(trends)
 	# if boostProb>0.8:
 	# 	exit()
 	return boostProb

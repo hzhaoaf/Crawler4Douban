@@ -85,7 +85,7 @@ def CreateAWrapper():
         analyzerPerField.put('subtype', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
         analyzerPerField.put('directors', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
         analyzerPerField.put('user_tags', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
-        analyzerPerField.put('others_like', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
+        analyzerPerField.put('others_like   ', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
         analyzerPerField.put('adjs', WhitespaceAnalyzer(Version.LUCENE_CURRENT))
 
         #analyzerPerField.put('douban_site', StandardAnalyzer(Version.LUCENE_CURRENT))注释起来的都是没必要分析的
@@ -144,7 +144,7 @@ class IndexMySql(object):
 
         #define the index of all the fields
         #---------step 2：connect to mysql----------
-        con = mdb.connect('localhost','root','testgce','moviedata')
+        con = mdb.connect('localhost','root','lhj75211314','douban_movie_v3')
 
         #t_num = FieldType.NumericType it is wrong!!
         t_num = FieldType()
@@ -189,6 +189,7 @@ class IndexMySql(object):
             numrows = int(cur.rowcount)
             print 'numrows:',numrows
             for i in range(numrows):
+                print
                 row = cur.fetchone()
 
                 #------step 4：Index your field------
@@ -242,7 +243,12 @@ class IndexMySql(object):
                 f.setBoost(boost)
                 doc.add(f)
 
-                f = Field("casts",     row[CASTS].replace(delim,' '),     t3)
+                #将英文人名中的 ·
+                f = Field("casts",     row[CASTS].replace(delim,' ').replace('·',' '),     t3)
+                f.setBoost(boost)
+                doc.add(f)
+
+                f = Field("directors", row[DIRECTORS].replace(delim,' ').replace('·',' '), t3)
                 f.setBoost(boost)
                 doc.add(f)
 
@@ -251,10 +257,6 @@ class IndexMySql(object):
                 doc.add(f)
 
                 Field("subtype",   row[SUBTYPE].replace(delim,' '),   t3)
-                f.setBoost(boost)
-                doc.add(f)
-
-                f = Field("directors", row[DIRECTORS].replace(delim,' '), t3)
                 f.setBoost(boost)
                 doc.add(f)
 
@@ -273,10 +275,12 @@ class IndexMySql(object):
                 others_like_str = ''
                 tags_len = 0
                 
+
                 if row[USER_TAGS]!='':
                     user_tags_list = row[USER_TAGS].split(delim) 
                     for tag_pair in user_tags_list:
                         if tag_pair!='':#字符串的最后一个字符是￥，这样split之后最后一个元素是空字符
+                            print 'tag_pair'+tag_pair+'hhe'
                             tag_name = tag_pair.split(delim_uo)[0]+' ' # dont forget this space !!
                             tag_num = tag_pair.split(delim_uo)[1]
                             tag_num_processed = int(int(tag_num)/SPAN)+1
@@ -303,14 +307,15 @@ class IndexMySql(object):
 
                     adjs_str = ''
                     adjs_len = 0
-                    if row[ADJS] != '':
+                    if row[ADJS] != '' and row[ADJS] != '\n':
                         #'重要=4.0,特殊=4.0'
                         adjs_str = row[ADJS]
                         adjs_list = adjs_str.split(',')
                         for adj_pair in adjs_list:
+                            #print 'adj_pair:'+adj_pair+'hhe'
                             adj_name = adj_pair.split('=')[0]
                             adj_num = adj_pair.split('=')[1] 
-                            if adj_pair.split('=')[1][-1] == '\n':
+                            if adj_num[-1] == '\n':
                                 adj_num = adj_num[0:-1]
                             adj_num = int(float(adj_num))
                             adjs_str = adjs_str + ' ' + adj_name * adj_num

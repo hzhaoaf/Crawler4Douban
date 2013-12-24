@@ -284,6 +284,16 @@ def f_ao(x):
 	y = a*x*x + b*x
 	return y
 
+def f_contrast(x):
+	#目前是 0～10
+	coff = [-0.0833,1.2500,-3.1667,-0.0000]
+	items = [x*x*x,x*x,x,1]
+	y = 0
+	for i in range(len(coff)):
+		y = y + coff[i]*items[i]
+	return y
+
+
 def insert2HistList(alist,pos):
 	#如果list已经够长
 	if len(alist)>pos:
@@ -448,15 +458,13 @@ def calcBoostProb(doc_row,maxDict,dateStr):
 	#一个好的加权，应该保证这几个维度上的数值都在差不多的范围
 	sparse = 0.3
 	#评分比较差的，就让它更差
-	if rating_av<7:
-		rating_av = float(rating_av) * 0.6
-	print rating_av
-	#!problem
-	print (rating_av/10)*sparse,impressive,popularity,howNew,trends
+	#rating_av = f_contrast(rating_av)
+	#print 'rating_av adjusted:'+str(rating_av)
+
 	#it is a measure of whether a movie should be addBoost, =1 means it is a  totally good movie which should be boosted
 	boostProb = 0.65*(rating_av/10) + (0.15*impressive + 0.1*popularity) +0.1*howNew
 
-	print rating_total, impressive, popularity, trends
+	print 'rating_av:'+str(rating_av), 'impressive:'+str(impressive), 'popularity:'+str(popularity),'trends'+str(trends)
 	# if boostProb>0.8:
 	# 	exit()
 	return boostProb

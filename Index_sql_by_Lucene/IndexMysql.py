@@ -35,6 +35,7 @@ import utils
 #step 1. change config below
 #step 2. make right connection to the sql
 #step 3. choose right table
+
 #step 4. select the field of the table you need to index or store
 
 
@@ -47,6 +48,29 @@ INDEX_DIR = "/home/env-shared/NGfiles/lucene_index"
 FIELD = 'summary'
 
 #---end config---
+
+with open('./same_adjs_prepared.txt','r') as f:
+    adjMap = {}
+    while(1):
+        line = f.readline()
+        if line == '':
+            break
+        adjPair = line.split(':')
+        sourceAdj = adjPair[0]
+        distAdj = adjPair[1][0:-1]
+        if distAdj not in adjMap.keys():
+            adjMap[distAdj] = [sourceAdj]
+        else:
+            adjMap[distAdj].append(sourceAdj)
+
+def searchDictValue(dic,value):
+    for eachKey in dic.keys():
+        for eachVal in dic[eachKey]:
+            if eachVal == value:
+                return eachKey
+
+    return -1 #not found
+
 
 
 
@@ -144,7 +168,7 @@ class IndexMySql(object):
 
         #define the index of all the fields
         #---------step 2：connect to mysql----------
-        con = mdb.connect('localhost','root','lhj75211314','douban_movie_v3')
+        con = mdb.connect('localhost','root','testgce','moviedata')
 
         #t_num = FieldType.NumericType it is wrong!!
         t_num = FieldType()
@@ -243,12 +267,35 @@ class IndexMySql(object):
                 f.setBoost(boost)
                 doc.add(f)
 
-                #将英文人名中的 ·
-                f = Field("casts",     row[CASTS].replace(delim,' ').replace('·',' '),     t3)
+                #process casts
+                raw_casts = row[CASTS].replace(delim,' ')
+                f = Field("raw_casts", raw_casts , t1)
                 f.setBoost(boost)
                 doc.add(f)
 
-                f = Field("directors", row[DIRECTORS].replace(delim,' ').replace('·',' '), t3)
+                #将英文人名中的 ·
+                raw_casts = raw_casts.replace('·',' ')
+                
+                if len(raw_casts.split(' '))<CASTS_LEN:
+                    #平局人名长度是4
+                    casts = raw_casts + ' ￥￥￥￥'*(CASTS_LEN-len(raw_casts.split(' ')))
+                f = Field("casts", casts , t3)
+                f.setBoost(boost)
+                doc.add(f)
+
+                #process directors
+                raw_directors = row[DIRECTORS].replace(delim,' ')
+                f = Field("raw_directors",raw_directors, t1)
+                f.setBoost(boost)
+                doc.add(f)
+
+                #将英文人名中的 · 替换
+                raw_directors = raw_directors.replace('·',' ')
+
+                if len(raw_directors.split(' '))<DIRECTORS_LEN:
+                    #平局人名长度是4
+                    directors = raw_directors + ' ￥￥￥￥'*(DIRECTORS_LEN-len(raw_directors.split(' ')))
+                f = Field("directors", directors, t3)
                 f.setBoost(boost)
                 doc.add(f)
 
@@ -280,17 +327,17 @@ class IndexMySql(object):
                     user_tags_list = row[USER_TAGS].split(delim) 
                     for tag_pair in user_tags_list:
                         if tag_pair!='':#字符串的最后一个字符是￥，这样split之后最后一个元素是空字符
-                            print 'tag_pair'+tag_pair+'hhe'
+                            #print 'tag_pair'+tag_pair+'hhe'
                             tag_name = tag_pair.split(delim_uo)[0]+' ' # dont forget this space !!
                             tag_num = tag_pair.split(delim_uo)[1]
-                            tag_num_processed = int(int(tag_num)/SPAN)+1
+                            tag_num_processed = int(int(tag_num)/TAG_SPAN)+1 #最小为1
                             #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                             user_tags_str = user_tags_str +' '+ tag_name * tag_num_processed
                             tags_len = tags_len + tag_num_processed #最后得到总共词的个数
 
 
                 if tags_len<TAGS_AVER_LEN:
-                    #填充tags，目测3是平均长度
+                    #填充tags，目测3是平均长度,所以使用 ￥￥￥
                     user_tags_str = user_tags_str +' ￥￥￥'*(TAGS_AVER_LEN - tags_len)
                 #
 
@@ -303,7 +350,7 @@ class IndexMySql(object):
 
                 #start process adjs
                 if row[ADJS] != None:
-                    doc.add(StringField("raw_adjs",row[ADJS],Field.Store.YES))
+                    raw_adjs = row[ADJS][:-1]
 
                     adjs_str = ''
                     adjs_len = 0
@@ -314,18 +361,31 @@ class IndexMySql(object):
                         for adj_pair in adjs_list:
                             #print 'adj_pair:'+adj_pair+'hhe'
                             adj_name = adj_pair.split('=')[0]
-                            adj_num = adj_pair.split('=')[1] 
+                            adj_num = adj_pair.split('=')[1]
+
+                            #去换行符,转换int
                             if adj_num[-1] == '\n':
                                 adj_num = adj_num[0:-1]
                             adj_num = int(float(adj_num))
-                            adjs_str = adjs_str + ' ' + adj_name * adj_num
+
+                            add_adj=''
+                            # #同义词
+                            # adj_name_bro = searchDictValue(adjMap,adj_name)
+                            # if adj_name_bro == -1: #表示没有结果，即未找到近义词，不添加
+                            #     add_adj = ''
+                            # else:
+                            #     add_adj = (adj_name_bro+' ')*adj_num
+                            #     raw_adjs = raw_adjs + ',' + adj_name_bro+'='+str(adj_num)
+                                
+                            adjs_str = adjs_str + ' ' + (adj_name+' ') * adj_num +add_adj
                             adjs_len = adjs_len + adj_num #最后得到总共tags的个数
 
-
+                    print raw_adjs
+                    doc.add(StringField("raw_adjs",raw_adjs,Field.Store.YES))
 
                     if adjs_len<ADJS_AVER_LEN:
-                        #填充tags，目测3是平均长度
-                        adjs_str = adjs_str +' ￥￥￥'*(ADJS_AVER_LEN - adjs_len)
+                        #填充 adjs_str，目测2是平均长度,所以使用 "￥￥"
+                        adjs_str = adjs_str +' ￥￥'*(ADJS_AVER_LEN - adjs_len)
 
                     f = Field("adjs", adjs_str, t3)
                     f.setBoost(boost)
@@ -391,7 +451,6 @@ if __name__ == '__main__':
     start = datetime.now()
     #try:
     CreateAWrapper()
-
     base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
     aWrapper = CreateAWrapper()
     IndexMySql(os.path.join(base_dir, INDEX_DIR), aWrapper)

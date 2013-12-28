@@ -10,6 +10,7 @@
 # 3.统计 countTerms_adj
 # 4.选择前几名 getTopAdj
 
+
 import MySQLdb as mdb
 from sqlConstants import *
 from time import sleep
